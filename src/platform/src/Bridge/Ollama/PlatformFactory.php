@@ -11,6 +11,8 @@
 
 namespace Symfony\AI\Platform\Bridge\Ollama;
 
+use Symfony\AI\Platform\Bridge\Ollama\Embeddings\ModelClient as EmbeddingsModelClient;
+use Symfony\AI\Platform\Bridge\Ollama\Embeddings\ResponseConverter as EmbeddingsResponseConverter;
 use Symfony\AI\Platform\Contract;
 use Symfony\AI\Platform\Platform;
 use Symfony\Component\HttpClient\EventSourceHttpClient;
@@ -29,6 +31,10 @@ final class PlatformFactory
         $httpClient = $httpClient instanceof EventSourceHttpClient ? $httpClient : new EventSourceHttpClient($httpClient);
         $handler = new LlamaModelHandler($httpClient, $hostUrl);
 
-        return new Platform([$handler], [$handler], $contract);
+        return new Platform(
+            [new EmbeddingsModelClient($httpClient, $hostUrl), $handler],
+            [new EmbeddingsResponseConverter(), $handler],
+            $contract
+        );
     }
 }
