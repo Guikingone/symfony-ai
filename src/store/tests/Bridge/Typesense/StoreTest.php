@@ -47,7 +47,7 @@ final class StoreTest extends TestCase
         $this->expectException(ClientException::class);
         $this->expectExceptionMessage('HTTP 400 returned for "http://localhost:8108/collections".');
         $this->expectExceptionCode(400);
-        $store->initialize();
+        $store->setup();
     }
 
     public function testStoreCanInitialize()
@@ -68,7 +68,7 @@ final class StoreTest extends TestCase
             'test',
         );
 
-        $store->initialize();
+        $store->setup();
 
         $this->assertSame(1, $httpClient->getRequestsCount());
     }

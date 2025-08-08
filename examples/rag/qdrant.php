@@ -38,7 +38,7 @@ $store = new Store(
 );
 
 // initialize the collection (needs to be called before the indexer)
-$store->initialize();
+$store->setup();
 
 // create embeddings and documents
 foreach (Movies::all() as $movie) {

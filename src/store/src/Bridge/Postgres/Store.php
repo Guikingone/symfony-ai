@@ -17,7 +17,7 @@ use Symfony\AI\Platform\Vector\VectorInterface;
 use Symfony\AI\Store\Document\Metadata;
 use Symfony\AI\Store\Document\VectorDocument;
 use Symfony\AI\Store\Exception\InvalidArgumentException;
-use Symfony\AI\Store\InitializableStoreInterface;
+use Symfony\AI\Store\SetupableStoreInterface;
 use Symfony\AI\Store\VectorStoreInterface;
 use Symfony\Component\Uid\Uuid;
 
@@ -28,7 +28,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @see https://github.com/pgvector/pgvector
  */
-final readonly class Store implements VectorStoreInterface, InitializableStoreInterface
+final readonly class Store implements VectorStoreInterface, SetupableStoreInterface
 {
     public function __construct(
         private \PDO $connection,
@@ -153,7 +153,7 @@ final readonly class Store implements VectorStoreInterface, InitializableStoreIn
      * - For Mistral: ['vector_size' => 1024]
      * - For Gemini: ['vector_type' => 'halfvec', 'vector_size' => 3072, 'index_method' => 'hnsw', 'index_opclass' => 'halfvec_cosine_ops']
      */
-    public function initialize(array $options = []): void
+    public function setup(array $options = []): void
     {
         $this->connection->exec('CREATE EXTENSION IF NOT EXISTS vector');
 

@@ -37,7 +37,7 @@ final class StoreTest extends TestCase
         $this->expectException(ClientException::class);
         $this->expectExceptionMessage('HTTP 400 returned for "http://localhost:7474/db/symfony/query/v2".');
         $this->expectExceptionCode(400);
-        $store->initialize();
+        $store->setup();
     }
 
     public function testStoreCanInitialize()
@@ -79,8 +79,8 @@ final class StoreTest extends TestCase
 
         $store = new Store($httpClient, 'http://localhost:7474', 'symfony', 'symfony', 'symfony', 'symfony', 'symfony');
 
-        $store->initialize();
-        $store->initialize();
+        $store->setup();
+        $store->setup();
 
         $this->assertSame(2, $httpClient->getRequestsCount());
     }
@@ -157,7 +157,7 @@ final class StoreTest extends TestCase
 
         $store = new Store($httpClient, 'http://localhost:7474', 'symfony', 'symfony', 'symfony', 'symfony', 'symfony');
 
-        $store->initialize();
+        $store->setup();
         $store->add(new VectorDocument(Uuid::v4(), new Vector([0.1, 0.2, 0.3])));
         $store->add(new VectorDocument(Uuid::v4(), new Vector([0.1, 0.2, 0.3])));
 
@@ -256,7 +256,7 @@ final class StoreTest extends TestCase
 
         $store = new Store($httpClient, 'http://localhost:7474', 'symfony', 'symfony', 'symfony', 'symfony', 'symfony');
 
-        $store->initialize();
+        $store->setup();
         $store->add(new VectorDocument(Uuid::v4(), new Vector([0.1, 0.2, 0.3])));
 
         $results = $store->query(new Vector([0.1, 0.2, 0.3]));

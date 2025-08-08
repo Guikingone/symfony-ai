@@ -16,7 +16,7 @@ use Symfony\AI\Platform\Vector\Vector;
 use Symfony\AI\Store\Document\Metadata;
 use Symfony\AI\Store\Document\VectorDocument;
 use Symfony\AI\Store\Exception\InvalidArgumentException;
-use Symfony\AI\Store\InitializableStoreInterface;
+use Symfony\AI\Store\SetupableStoreInterface;
 use Symfony\AI\Store\VectorStoreInterface;
 use Symfony\Component\Uid\Uuid;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
@@ -24,7 +24,7 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 /**
  * @author Guillaume Loulier <personal@guillaumeloulier.fr>
  */
-final readonly class Store implements InitializableStoreInterface, VectorStoreInterface
+final readonly class Store implements SetupableStoreInterface, VectorStoreInterface
 {
     public function __construct(
         private HttpClientInterface $httpClient,
@@ -70,7 +70,7 @@ final readonly class Store implements InitializableStoreInterface, VectorStoreIn
         return array_map($this->convertToVectorDocument(...), $response['result']['points']);
     }
 
-    public function initialize(array $options = []): void
+    public function setup(array $options = []): void
     {
         if ([] !== $options) {
             throw new InvalidArgumentException('No supported options.');

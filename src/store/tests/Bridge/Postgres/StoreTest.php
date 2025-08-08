@@ -365,7 +365,7 @@ final class StoreTest extends TestCase
                 return 0;
             });
 
-        $store->initialize();
+        $store->setup();
     }
 
     public function testInitializeWithCustomVectorSize()
@@ -388,7 +388,7 @@ final class StoreTest extends TestCase
                 return 0;
             });
 
-        $store->initialize(['vector_size' => 768]);
+        $store->setup(['vector_size' => 768]);
     }
 
     public function testFromPdo()

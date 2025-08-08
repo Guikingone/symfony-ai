@@ -22,7 +22,7 @@ use Symfony\AI\Store\Document\Metadata;
 use Symfony\AI\Store\Document\VectorDocument;
 use Symfony\AI\Store\Exception\InvalidArgumentException;
 use Symfony\AI\Store\Exception\RuntimeException;
-use Symfony\AI\Store\InitializableStoreInterface;
+use Symfony\AI\Store\SetupableStoreInterface;
 use Symfony\AI\Store\VectorStoreInterface;
 use Symfony\Component\Uid\Uuid;
 
@@ -49,7 +49,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @author Oskar Stark <oskarstark@googlemail.com>
  */
-final readonly class Store implements VectorStoreInterface, InitializableStoreInterface
+final readonly class Store implements VectorStoreInterface, SetupableStoreInterface
 {
     /**
      * @param string $databaseName    The name of the database
@@ -162,7 +162,7 @@ final readonly class Store implements VectorStoreInterface, InitializableStoreIn
     /**
      * @param array{fields?: array<mixed>} $options
      */
-    public function initialize(array $options = []): void
+    public function setup(array $options = []): void
     {
         if ([] !== $options && !\array_key_exists('fields', $options)) {
             throw new InvalidArgumentException('The only supported option is "fields".');

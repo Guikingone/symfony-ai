@@ -41,7 +41,7 @@ $store = new Store(
 );
 
 // initialize the table
-$store->initialize();
+$store->setup();
 
 // create embeddings and documents
 $documents = [];

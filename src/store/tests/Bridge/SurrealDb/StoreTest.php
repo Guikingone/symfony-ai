@@ -37,7 +37,7 @@ final class StoreTest extends TestCase
         $this->expectException(ClientException::class);
         $this->expectExceptionMessage('HTTP 400 returned for "http://localhost:8000/signin".');
         $this->expectExceptionCode(400);
-        $store->initialize();
+        $store->setup();
     }
 
     public function testStoreCannotInitializeOnValidAuthenticationResponse()
@@ -60,7 +60,7 @@ final class StoreTest extends TestCase
         $this->expectException(ClientException::class);
         $this->expectExceptionMessage('HTTP 400 returned for "http://localhost:8000/sql".');
         $this->expectExceptionCode(400);
-        $store->initialize();
+        $store->setup();
     }
 
     public function testStoreCannotInitializeOnValidAuthenticationAndIndexResponse()
@@ -86,7 +86,7 @@ final class StoreTest extends TestCase
 
         $store = new Store($httpClient, 'http://localhost:8000', 'test', 'test', 'test', 'test');
 
-        $store->initialize();
+        $store->setup();
 
         $this->assertSame(2, $httpClient->getRequestsCount());
     }
@@ -116,7 +116,7 @@ final class StoreTest extends TestCase
         ], 'http://localhost:8000');
 
         $store = new Store($httpClient, 'http://localhost:8000', 'test', 'test', 'test', 'test', 'test');
-        $store->initialize();
+        $store->setup();
 
         $this->expectException(ClientException::class);
         $this->expectExceptionMessage('HTTP 400 returned for "http://localhost:8000/key/test".');
@@ -149,7 +149,7 @@ final class StoreTest extends TestCase
         ], 'http://localhost:8000');
 
         $store = new Store($httpClient, 'http://localhost:8000', 'test', 'test', 'test', 'test', 'test');
-        $store->initialize();
+        $store->setup();
 
         $this->expectException(ClientException::class);
         $this->expectExceptionMessage('HTTP 400 returned for "http://localhost:8000/key/test".');
@@ -203,7 +203,7 @@ final class StoreTest extends TestCase
         ], 'http://localhost:8000');
 
         $store = new Store($httpClient, 'http://localhost:8000', 'test', 'test', 'test', 'test', 'test');
-        $store->initialize();
+        $store->setup();
 
         $store->add(new VectorDocument(Uuid::v4(), new Vector(array_fill(0, 1275, 0.1))));
 
@@ -259,7 +259,7 @@ final class StoreTest extends TestCase
         ], 'http://localhost:8000');
 
         $store = new Store($httpClient, 'http://localhost:8000', 'test', 'test', 'test', 'test', 'test');
-        $store->initialize();
+        $store->setup();
 
         $store->add(new VectorDocument(Uuid::v4(), new Vector(array_fill(0, 1275, 0.1))));
 

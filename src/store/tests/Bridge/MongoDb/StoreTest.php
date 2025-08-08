@@ -371,7 +371,7 @@ final class StoreTest extends TestCase
             'test-index',
         );
 
-        $store->initialize();
+        $store->setup();
     }
 
     public function testInitializeWithOptions()
@@ -414,7 +414,7 @@ final class StoreTest extends TestCase
             'test-index',
         );
 
-        $store->initialize([
+        $store->setup([
             'fields' => [
                 [
                     'path' => 'title',
@@ -438,7 +438,7 @@ final class StoreTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('The only supported option is "fields"');
 
-        $store->initialize(['invalid' => 'option']);
+        $store->setup(['invalid' => 'option']);
     }
 
     public function testInitializeHandlesCommandException()
@@ -471,7 +471,7 @@ final class StoreTest extends TestCase
             $logger,
         );
 
-        $store->initialize();
+        $store->setup();
     }
 
     public function testQueryWithCustomVectorFieldName()

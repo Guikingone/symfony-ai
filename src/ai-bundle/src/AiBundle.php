@@ -84,6 +84,7 @@ final class AiBundle extends AbstractBundle
     public function loadExtension(array $config, ContainerConfigurator $container, ContainerBuilder $builder): void
     {
         $container->import('../config/services.php');
+        $container->import('../config/console.php');
 
         foreach ($config['platform'] ?? [] as $type => $platform) {
             $this->processPlatformConfig($type, $platform, $builder);

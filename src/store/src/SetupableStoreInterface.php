@@ -14,10 +14,10 @@ namespace Symfony\AI\Store;
 /**
  * @author Oskar Stark <oskarstark@googlemail.com>
  */
-interface InitializableStoreInterface extends StoreInterface
+interface SetupableStoreInterface extends StoreInterface
 {
     /**
      * @param array<mixed> $options
      */
-    public function initialize(array $options = []): void;
+    public function setup(array $options = []): void;
 }

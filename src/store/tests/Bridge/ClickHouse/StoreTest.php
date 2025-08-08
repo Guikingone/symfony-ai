@@ -51,7 +51,7 @@ final class StoreTest extends TestCase
 
         $store = new Store($httpClient, 'test_db', 'test_table');
 
-        $store->initialize();
+        $store->setup();
 
         $this->assertCount(1, $expectedRequests);
     }

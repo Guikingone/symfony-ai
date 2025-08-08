@@ -17,7 +17,7 @@ use Symfony\AI\Store\Document\Metadata;
 use Symfony\AI\Store\Document\VectorDocument;
 use Symfony\AI\Store\Exception\InvalidArgumentException;
 use Symfony\AI\Store\Exception\RuntimeException;
-use Symfony\AI\Store\InitializableStoreInterface;
+use Symfony\AI\Store\SetupableStoreInterface;
 use Symfony\AI\Store\VectorStoreInterface;
 use Symfony\Component\Uid\Uuid;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
@@ -25,7 +25,7 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 /**
  * @author Guillaume Loulier <personal@guillaumeloulier.fr>
  */
-final class Store implements InitializableStoreInterface, VectorStoreInterface
+final class Store implements SetupableStoreInterface, VectorStoreInterface
 {
     private string $authenticationToken = '';
 
@@ -63,7 +63,7 @@ final class Store implements InitializableStoreInterface, VectorStoreInterface
         return array_map($this->convertToVectorDocument(...), $results[0]['result']);
     }
 
-    public function initialize(array $options = []): void
+    public function setup(array $options = []): void
     {
         $this->authenticate();
 

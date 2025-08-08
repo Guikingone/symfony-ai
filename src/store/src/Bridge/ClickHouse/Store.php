@@ -16,7 +16,7 @@ use Symfony\AI\Platform\Vector\VectorInterface;
 use Symfony\AI\Store\Document\Metadata;
 use Symfony\AI\Store\Document\VectorDocument;
 use Symfony\AI\Store\Exception\RuntimeException;
-use Symfony\AI\Store\InitializableStoreInterface;
+use Symfony\AI\Store\SetupableStoreInterface;
 use Symfony\AI\Store\VectorStoreInterface;
 use Symfony\Component\Uid\Uuid;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
@@ -25,7 +25,7 @@ use Symfony\Contracts\HttpClient\ResponseInterface;
 /**
  * @author Grégoire Pineau <lyrixx@lyrixx.info>
  */
-class Store implements VectorStoreInterface, InitializableStoreInterface
+class Store implements VectorStoreInterface, SetupableStoreInterface
 {
     public function __construct(
         private readonly HttpClientInterface $httpClient,
@@ -34,7 +34,7 @@ class Store implements VectorStoreInterface, InitializableStoreInterface
     ) {
     }
 
-    public function initialize(array $options = []): void
+    public function setup(array $options = []): void
     {
         $sql = <<<'SQL'
             CREATE TABLE IF NOT EXISTS {{ table }} (
