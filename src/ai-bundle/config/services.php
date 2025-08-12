@@ -134,7 +134,7 @@ return static function (ContainerConfigurator $container): void {
             ->tag('ai.traceable_toolbox')
 
         // Discovery
-        ->set('ai.store.receiver_locator', ServiceLocator::class)
+        ->set('ai.store.store_locator', ServiceLocator::class)
             ->args([
                 [],
             ])

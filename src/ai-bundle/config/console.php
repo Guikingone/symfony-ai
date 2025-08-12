@@ -11,13 +11,13 @@
 
 namespace Symfony\Component\DependencyInjection\Loader\Configurator;
 
-use Symfony\AI\AiBundle\Command\SetupStoreCommand;
+use Symfony\AI\Store\Command\SetupStoreCommand;
 
 return static function (ContainerConfigurator $container) {
     $container->services()
         ->set('console.command.ai_setup_stores', SetupStoreCommand::class)
         ->args([
-            service('ai.store.receiver_locator'),
+            service('ai.store.store_locator'),
             [], // Receiver names
         ])
         ->tag('console.command');

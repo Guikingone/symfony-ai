@@ -105,6 +105,13 @@ class AiBundleTest extends TestCase
         ]);
     }
 
+    public function testCommandsAreRegistered()
+    {
+        $container = $this->buildContainer($this->getFullConfig());
+
+        $this->assertTrue($container->hasDefinition('console.command.ai_setup_stores'));
+    }
+
     private function buildContainer(array $configuration): ContainerBuilder
     {
         $container = new ContainerBuilder();

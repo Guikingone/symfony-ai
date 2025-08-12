@@ -9,12 +9,12 @@
  * file that was distributed with this source code.
  */
 
-namespace Symfony\AI\AiBundle\Tests\Command;
+namespace Symfony\AI\Store\Tests\Command;
 
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
-use Symfony\AI\AiBundle\Command\SetupStoreCommand;
+use Symfony\AI\Store\Command\SetupStoreCommand;
 
 #[CoversClass(SetupStoreCommand::class)]
 final class SetupStoreCommandTest extends TestCase

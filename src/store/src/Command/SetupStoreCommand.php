@@ -9,7 +9,7 @@
  * file that was distributed with this source code.
  */
 
-namespace Symfony\AI\AiBundle\Command;
+namespace Symfony\AI\Store\Command;
 
 use Psr\Container\ContainerInterface;
 use Symfony\AI\Store\SetupableStoreInterface;
