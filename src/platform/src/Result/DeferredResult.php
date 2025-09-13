@@ -15,6 +15,7 @@ use Symfony\AI\Platform\Exception\ExceptionInterface;
 use Symfony\AI\Platform\Exception\UnexpectedResultTypeException;
 use Symfony\AI\Platform\Metadata\MetadataAwareTrait;
 use Symfony\AI\Platform\ResultConverterInterface;
+use Symfony\AI\Platform\Speech\SpeechAwareTrait;
 use Symfony\AI\Platform\Vector\Vector;
 
 /**
@@ -23,6 +24,7 @@ use Symfony\AI\Platform\Vector\Vector;
 final class DeferredResult
 {
     use MetadataAwareTrait;
+    use SpeechAwareTrait;
 
     private bool $isConverted = false;
     private ResultInterface $convertedResult;
@@ -63,6 +65,8 @@ final class DeferredResult
 
             $this->isConverted = true;
         }
+
+        $this->convertedResult->addSpeech($this->speech);
 
         return $this->convertedResult;
     }
