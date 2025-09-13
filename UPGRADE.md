@@ -42,7 +42,7 @@ AI Bundle
  * The `endpoint` option for `Ollama` is now `null` by default to allow the usage of a `ScopingHttpClient`
 
 Platform
------
+--------
 
  * `ModelCatalog` in `Ollama` has been replaced by `OllamaApiCatalog`
  * `OllamaApiCatalog` in `Ollama` has been replaced to `ModelCatalog`

@@ -9,6 +9,7 @@ CHANGELOG
  * [BC BREAK] Remove `AbstractToolFactory` in favor of standalone `ReflectionToolFactory` and `MemoryToolFactory`
  * [BC BREAK] Change `ToolFactoryInterface::getTool()` signature from `string $reference` to `object|string $reference`
  * Add `ToolCallRequested` event dispatched before tool execution
+ * Add `SpeechAgent` decorator for speech-to-text and text-to-speech capabilities
 
 0.4
 ---

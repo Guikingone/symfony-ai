@@ -770,6 +770,106 @@ Testing a service that uses an agent::
 The ``MockAgent`` provides all the benefits of traditional mocks while offering a more intuitive API for AI agent testing,
 making your tests more reliable and easier to maintain.
 
+Speech support
+~~~~~~~~~~~~~~
+
+The :class:`Symfony\\AI\\Agent\\SpeechAgent` decorator adds speech capabilities (STT/TTS) to any agent. It wraps
+an existing :class:`Symfony\\AI\\Agent\\AgentInterface` and handles audio-to-text conversion on input and
+text-to-audio conversion on output.
+
+When TTS is configured, the decorator returns a :class:`Symfony\\AI\\Platform\\Speech\\SpeechResult` that gives
+direct access to both the text content and the audio output.
+
+Here is a `text-to-speech` example::
+
+    use Symfony\AI\Agent\Agent;
+    use Symfony\AI\Agent\SpeechAgent;
+    use Symfony\AI\Platform\Bridge\ElevenLabs\PlatformFactory as ElevenLabsPlatformFactory;
+    use Symfony\AI\Platform\Bridge\OpenAi\PlatformFactory as OpenAiPlatformFactory;
+    use Symfony\AI\Platform\Message\Message;
+    use Symfony\AI\Platform\Message\MessageBag;
+    use Symfony\AI\Platform\Speech\SpeechConfiguration;
+    use Symfony\AI\Platform\Speech\SpeechResult;
+
+    $platform = OpenAiPlatformFactory::create('key');
+    $agent = new Agent($platform, 'gpt-4o');
+
+    $speechAgent = new SpeechAgent($agent, ElevenLabsPlatformFactory::create(
+        apiKey: 'key',
+    ), new SpeechConfiguration(
+        ttsModel: 'eleven_multilingual_v2',
+        ttsOptions: ['voice' => 'Dslrhjl3ZpzrctukrQSN'],
+    ));
+
+    $answer = $speechAgent->call(new MessageBag(
+        Message::ofUser('Tina has one brother and one sister. How many sisters do Tina\'s siblings have?'),
+    ));
+
+    assert($answer instanceof SpeechResult);
+    echo $answer->getContent();  // text from the LLM
+    echo $answer->asBinary();    // audio from TTS
+    $answer->asFile('/tmp/speech.mp3'); // save to file
+
+When handling `speech-to-text`, the decorator transcribes the audio input before delegating to the inner agent::
+
+    use Symfony\AI\Agent\Agent;
+    use Symfony\AI\Agent\SpeechAgent;
+    use Symfony\AI\Platform\Bridge\ElevenLabs\PlatformFactory as ElevenLabsPlatformFactory;
+    use Symfony\AI\Platform\Bridge\OpenAi\PlatformFactory as OpenAiPlatformFactory;
+    use Symfony\AI\Platform\Message\Content\Audio;
+    use Symfony\AI\Platform\Message\Message;
+    use Symfony\AI\Platform\Message\MessageBag;
+    use Symfony\AI\Platform\Speech\SpeechConfiguration;
+
+    $platform = OpenAiPlatformFactory::create('key');
+    $agent = new Agent($platform, 'gpt-4o');
+
+    $speechAgent = new SpeechAgent($agent, ElevenLabsPlatformFactory::create(
+        apiKey: 'key',
+    ), new SpeechConfiguration(
+        sttModel: 'scribe_v1',
+    ));
+
+    $answer = $speechAgent->call(new MessageBag(
+        Message::ofUser(Audio::fromFile('audio.mp3'))
+    ));
+
+    echo $answer->getContent(); // transcribed text was sent to the LLM
+
+A full speech-to-speech pipeline (STT + TTS) can be created by configuring both models::
+
+    use Symfony\AI\Agent\Agent;
+    use Symfony\AI\Agent\SpeechAgent;
+    use Symfony\AI\Platform\Bridge\ElevenLabs\PlatformFactory as ElevenLabsPlatformFactory;
+    use Symfony\AI\Platform\Bridge\OpenAi\PlatformFactory as OpenAiPlatformFactory;
+    use Symfony\AI\Platform\Message\Content\Audio;
+    use Symfony\AI\Platform\Message\Message;
+    use Symfony\AI\Platform\Message\MessageBag;
+    use Symfony\AI\Platform\Speech\SpeechConfiguration;
+    use Symfony\AI\Platform\Speech\SpeechResult;
+
+    $platform = OpenAiPlatformFactory::create('key');
+    $agent = new Agent($platform, 'gpt-4o');
+
+    $speechAgent = new SpeechAgent($agent, ElevenLabsPlatformFactory::create(
+        apiKey: 'key',
+    ), new SpeechConfiguration(
+        ttsModel: 'eleven_multilingual_v2',
+        ttsOptions: ['voice' => 'Dslrhjl3ZpzrctukrQSN'],
+        sttModel: 'scribe_v1',
+    ));
+
+    $answer = $speechAgent->call(new MessageBag(
+        Message::ofUser(Audio::fromFile('audio.mp3'))
+    ));
+
+    assert($answer instanceof SpeechResult);
+    echo $answer->asBinary();
+
+.. note::
+
+    Handling both `text-to-speech` and `speech-to-text` introduces latency as most of the process is synchronous.
+
 Code Examples
 ~~~~~~~~~~~~~
 

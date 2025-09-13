@@ -1210,6 +1210,80 @@ Chats are defined in the ``chat`` section of your configuration:
                 agent: 'ai.agent.youtube'
                 message_store: 'ai.message_store.cache.youtube'
 
+Speech
+------
+
+The bundle can automatically decorate any agent with :class:`Symfony\\AI\\Agent\\SpeechAgent` to add speech
+capabilities (speech-to-text and/or text-to-speech). This enables STT, TTS, or full STS (speech-to-speech) pipelines,
+leading to a more "human-like" conversation flow.
+
+Configuring speech
+~~~~~~~~~~~~~~~~~~
+
+Add a ``speech`` key to any agent configuration to enable speech capabilities:
+
+.. code-block:: yaml
+
+    # config/packages/ai.yaml
+    ai:
+        platform:
+            elevenlabs:
+                api_key: '%env(ELEVEN_LABS_API_KEY)%'
+            openai:
+                api_key: '%env(OPENAI_API_KEY)%'
+
+        agent:
+            my_agent:
+                platform: ai.platform.openai
+                model: gpt-4o
+                speech:
+                    platform: 'ai.platform.elevenlabs'
+                    tts_model: eleven_multilingual_v2
+                    tts_options:
+                        voice: Dslrhjl3ZpzrctukrQSN
+                    stt_model: scribe_v1
+
+The bundle automatically decorates the agent with ``SpeechAgent``. At least one of ``tts_model`` or ``stt_model``
+must be configured. Both can be enabled independently:
+
+- **TTS only**: configure ``tts_model`` (and optionally ``tts_options``) to convert the agent's text response to audio
+- **STT only**: configure ``stt_model`` (and optionally ``stt_options``) to transcribe audio input before sending it to the agent
+- **STS**: configure both for a full speech-to-speech pipeline
+
+Speech is disabled by default and can be disabled when needed with ``speech: false``:
+
+.. code-block:: yaml
+
+    ai:
+        agent:
+            my_agent:
+                model: gpt-4o
+                speech: false
+
+Using the result
+~~~~~~~~~~~~~~~~
+
+When TTS is configured, the decorated agent returns a :class:`Symfony\\AI\\Platform\\Speech\\SpeechResult` that
+gives direct access to both the text content and the audio output::
+
+    use Symfony\AI\Platform\Speech\SpeechResult;
+
+    $result = $agent->call($messages);
+
+    if ($result instanceof SpeechResult) {
+        $result->getContent();              // text from the LLM
+        $result->asBinary();                // raw audio bytes
+        $result->asDataUri('audio/mpeg');    // data URI for embedding in HTML
+        $result->asFile('/tmp/speech.mp3'); // save audio to file
+    }
+
+When only STT is configured (no TTS), the agent returns the same result type as the inner agent
+(typically a :class:`Symfony\\AI\\Platform\\Result\\TextResult`).
+
+.. note::
+
+    Handling both speech-to-text and text-to-speech introduces latency as most of the process is synchronous.
+
 .. _`Symfony AI Agent`: https://github.com/symfony/ai-agent
 .. _`Symfony AI Chat`: https://github.com/symfony/ai-chat
 .. _`Symfony AI Platform`: https://github.com/symfony/ai-platform
