@@ -32,6 +32,16 @@ final readonly class CacheStore implements ManagedStoreInterface, MessageStoreIn
         }
     }
 
+    public function setup(array $options = []): void
+    {
+        $item = $this->cache->getItem($this->cacheKey);
+
+        $item->set(new MessageBag());
+        $item->expiresAfter($this->ttl);
+
+        $this->cache->save($item);
+    }
+
     public function save(MessageBag $messages): void
     {
         $item = $this->cache->getItem($this->cacheKey);
@@ -47,16 +57,6 @@ final readonly class CacheStore implements ManagedStoreInterface, MessageStoreIn
         $item = $this->cache->getItem($this->cacheKey);
 
         return $item->isHit() ? $item->get() : new MessageBag();
-    }
-
-    public function setup(array $options = []): void
-    {
-        $item = $this->cache->getItem($this->cacheKey);
-
-        $item->set(new MessageBag());
-        $item->expiresAfter($this->ttl);
-
-        $this->cache->save($item);
     }
 
     public function drop(): void

@@ -36,6 +36,11 @@ final readonly class SessionStore implements ManagedStoreInterface, MessageStore
         $this->session = $requestStack->getSession();
     }
 
+    public function setup(array $options = []): void
+    {
+        $this->session->set($this->sessionKey, new MessageBag());
+    }
+
     public function save(MessageBag $messages): void
     {
         $this->session->set($this->sessionKey, $messages);
@@ -44,11 +49,6 @@ final readonly class SessionStore implements ManagedStoreInterface, MessageStore
     public function load(): MessageBag
     {
         return $this->session->get($this->sessionKey, new MessageBag());
-    }
-
-    public function setup(array $options = []): void
-    {
-        $this->session->set($this->sessionKey, new MessageBag());
     }
 
     public function drop(): void

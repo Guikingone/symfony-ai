@@ -22,6 +22,11 @@ final class InMemoryStore implements ManagedStoreInterface, MessageStoreInterfac
 {
     private MessageBag $messages;
 
+    public function setup(array $options = []): void
+    {
+        $this->messages = new MessageBag();
+    }
+
     public function save(MessageBag $messages): void
     {
         $this->messages = $messages;
@@ -30,11 +35,6 @@ final class InMemoryStore implements ManagedStoreInterface, MessageStoreInterfac
     public function load(): MessageBag
     {
         return $this->messages ?? new MessageBag();
-    }
-
-    public function setup(array $options = []): void
-    {
-        $this->messages = new MessageBag();
     }
 
     public function drop(): void
