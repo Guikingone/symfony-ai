@@ -84,3 +84,25 @@ This leads to a store implementing two methods::
             // Implementation to drop the store (and related messages)
         }
     }
+
+Commands
+--------
+
+While using the `Chat` component in your Symfony application along with the ``AiBundle``,
+you can use the ``bin/console ai:message-store:setup`` command to initialize the message store and ``bin/console ai:message-store:drop`` to clean up the message store:
+
+.. code-block:: yaml
+
+    # config/packages/ai.yaml
+    ai:
+        # ...
+
+        message_store:
+            chroma_db:
+                symfonycon:
+                    collection: 'symfony_blog'
+
+.. code-block:: terminal
+
+    $ php bin/console ai:message-store:setup symfonycon
+    $ php bin/console ai:message-store:drop symfonycon
