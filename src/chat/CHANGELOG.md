@@ -5,3 +5,8 @@ CHANGELOG
 ---
 
  * Add the component
+
+0.2
+---
+
+ * Add `Chat::fork` for separated conversations

@@ -26,12 +26,15 @@ $store->setup();
 $agent = new Agent($platform, 'gpt-4o-mini');
 $chat = new Chat($agent, $store);
 
-$messages = new MessageBag(
+$chat->initiate(new MessageBag(
     Message::forSystem('You are a helpful assistant. You only answer with short sentences.'),
-);
-
-$chat->initiate($messages);
+));
 $chat->submit(Message::ofUser('My name is Christopher.'));
-$message = $chat->submit(Message::ofUser('What is my name?'));
 
-echo $message->getContent().\PHP_EOL;
+$forkedChat = $chat->fork(Message::ofUser('Made a mistake about my name, my name is Oskar'), '_forked_for_oskar');
+
+$firstMessage = $chat->submit(Message::ofUser('What is my name?'));
+$forkedMessage = $forkedChat->submit(Message::ofUser('What is my name?'));
+
+echo sprintf('First chat: "%s"', $firstMessage->getContent()).\PHP_EOL;
+echo sprintf('Forked chat: "%s"', $forkedMessage->getContent()).\PHP_EOL;

@@ -26,28 +26,57 @@ final class Chat implements ChatInterface
     public function __construct(
         private readonly AgentInterface $agent,
         private readonly MessageStoreInterface&ManagedStoreInterface $store,
+        private string $name = '_chat',
     ) {
     }
 
-    public function initiate(MessageBag $messages): void
+    public function initiate(MessageBag $messages, ?string $identifier = null): void
     {
+        $this->name = $identifier ?? $this->name;
+
+        $messages->setChat($this->name);
+
         $this->store->drop();
-        $this->store->save($messages);
+        $this->store->save($messages, $this->name);
     }
 
-    public function submit(UserMessage $message): AssistantMessage
+    public function submit(UserMessage $message, ?string $identifier = null): AssistantMessage
     {
-        $messages = $this->store->load();
+        $this->name = $identifier ?? $this->name;
+
+        $messages = $this->store->load($this->name);
 
         $messages->add($message);
-        $result = $this->agent->call($messages);
+
+        return $this->callAgent($messages, $identifier);
+    }
+
+    public function fork(UserMessage $message, string $identifier): self
+    {
+        $clone = clone $this;
+
+        $currentMessages = $this->store->load($this->name);
+
+        $forkedMessages = $currentMessages->fork($message);
+        $forkedMessages->setChat($identifier);
+
+        $this->callAgent($forkedMessages, $identifier);
+
+        $clone->name = $identifier;
+
+        return $clone;
+    }
+
+    private function callAgent(MessageBag $messageBag, ?string $identifier = null): AssistantMessage
+    {
+        $result = $this->agent->call($messageBag);
 
         \assert($result instanceof TextResult);
 
         $assistantMessage = Message::ofAssistant($result->getContent());
-        $messages->add($assistantMessage);
+        $messageBag->add($assistantMessage);
 
-        $this->store->save($messages);
+        $this->store->save($messageBag, $identifier);
 
         return $assistantMessage;
     }

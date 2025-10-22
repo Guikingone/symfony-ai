@@ -22,6 +22,7 @@ use Doctrine\DBAL\Schema\Schema;
 use Doctrine\DBAL\Types\Types;
 use Symfony\AI\Chat\Exception\InvalidArgumentException;
 use Symfony\AI\Chat\ManagedStoreInterface;
+use Symfony\AI\Chat\MessageBagNormalizer;
 use Symfony\AI\Chat\MessageNormalizer;
 use Symfony\AI\Chat\MessageStoreInterface;
 use Symfony\AI\Platform\Message\MessageBag;
@@ -41,6 +42,7 @@ final class DoctrineDbalMessageStore implements ManagedStoreInterface, MessageSt
         private readonly DBALConnection $dbalConnection,
         private readonly SerializerInterface $serializer = new Serializer([
             new ArrayDenormalizer(),
+            new MessageBagNormalizer(new MessageNormalizer()),
             new MessageNormalizer(),
         ], [new JsonEncoder()]),
     ) {
@@ -77,28 +79,28 @@ final class DoctrineDbalMessageStore implements ManagedStoreInterface, MessageSt
         ));
     }
 
-    public function save(MessageBag $messages): void
+    public function save(MessageBag $messages, ?string $identifier = null): void
     {
         $queryBuilder = $this->dbalConnection->createQueryBuilder()
-            ->insert($this->tableName)
+            ->insert($identifier ?? $this->tableName)
             ->values([
-                'messages' => '?',
+                'bag' => '?',
             ]);
 
         $this->dbalConnection->transactional(fn (Connection $connection): Result => $connection->executeQuery(
             $queryBuilder->getSQL(),
             [
-                $this->serializer->serialize($messages->getMessages(), 'json'),
+                $this->serializer->serialize($messages, 'json'),
             ],
             $queryBuilder->getParameterTypes(),
         ));
     }
 
-    public function load(): MessageBag
+    public function load(?string $identifier = null): MessageBag
     {
         $queryBuilder = $this->dbalConnection->createQueryBuilder()
             ->select('messages')
-            ->from($this->tableName)
+            ->from($identifier ?? $this->tableName)
         ;
 
         $result = $this->dbalConnection->transactional(static fn (Connection $connection): Result => $connection->executeQuery(

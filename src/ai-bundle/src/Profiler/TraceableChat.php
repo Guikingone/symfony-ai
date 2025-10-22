@@ -45,7 +45,7 @@ final class TraceableChat implements ChatInterface
     ) {
     }
 
-    public function initiate(MessageBag $messages): void
+    public function initiate(MessageBag $messages, ?string $identifier = null): void
     {
         $this->calls[] = [
             'action' => __FUNCTION__,
@@ -56,7 +56,7 @@ final class TraceableChat implements ChatInterface
         $this->chat->initiate($messages);
     }
 
-    public function submit(UserMessage $message): AssistantMessage
+    public function submit(UserMessage $message, ?string $identifier = null): AssistantMessage
     {
         $this->calls[] = [
             'action' => __FUNCTION__,
@@ -65,5 +65,10 @@ final class TraceableChat implements ChatInterface
         ];
 
         return $this->chat->submit($message);
+    }
+
+    public function fork(UserMessage $message, string $identifier): ChatInterface
+    {
+        return $this->chat->fork($message, $identifier);
     }
 }
