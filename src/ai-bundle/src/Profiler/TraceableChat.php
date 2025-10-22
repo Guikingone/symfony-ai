@@ -66,4 +66,9 @@ final class TraceableChat implements ChatInterface
 
         return $this->chat->submit($message);
     }
+
+    public function fork(MessageBag $messageBag): ChatInterface
+    {
+        return $this->chat->fork($messageBag);
+    }
 }

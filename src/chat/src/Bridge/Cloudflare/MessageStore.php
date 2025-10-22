@@ -12,6 +12,7 @@
 namespace Symfony\AI\Chat\Bridge\Cloudflare;
 
 use Symfony\AI\Chat\ManagedStoreInterface;
+use Symfony\AI\Chat\MessageBagNormalizer;
 use Symfony\AI\Chat\MessageNormalizer;
 use Symfony\AI\Chat\MessageStoreInterface;
 use Symfony\AI\Platform\Message\MessageBag;
@@ -36,6 +37,7 @@ final class MessageStore implements ManagedStoreInterface, MessageStoreInterface
         #[\SensitiveParameter] private readonly string $apiKey,
         private readonly SerializerInterface&NormalizerInterface&DenormalizerInterface $serializer = new Serializer([
             new ArrayDenormalizer(),
+            new MessageBagNormalizer(new MessageNormalizer()),
             new MessageNormalizer(),
         ], [new JsonEncoder()]),
         private readonly string $endpointUrl = 'https://api.cloudflare.com/client/v4/accounts',
@@ -75,7 +77,7 @@ final class MessageStore implements ManagedStoreInterface, MessageStoreInterface
         ));
     }
 
-    public function save(MessageBag $messages): void
+    public function save(MessageBag $messages, ?string $identifier = null): void
     {
         $currentNamespace = $this->retrieveCurrentNamespace();
 
@@ -88,7 +90,7 @@ final class MessageStore implements ManagedStoreInterface, MessageStoreInterface
         ));
     }
 
-    public function load(): MessageBag
+    public function load(?string $identifier = null): MessageBag
     {
         $currentNamespace = $this->retrieveCurrentNamespace();
 
@@ -144,7 +146,7 @@ final class MessageStore implements ManagedStoreInterface, MessageStoreInterface
 
         $filteredNamespaces = array_filter(
             $namespaces['result'],
-            fn (array $payload): bool => $payload['title'] === $this->namespace,
+            fn (array $payload): bool => $payload['title'] === $identifier ?? $this->namespace,
         );
 
         if (0 === \count($filteredNamespaces) && $page !== $namespaces['result_info']['total_pages']) {

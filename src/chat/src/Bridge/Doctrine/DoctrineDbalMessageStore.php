@@ -77,7 +77,7 @@ final class DoctrineDbalMessageStore implements ManagedStoreInterface, MessageSt
         ));
     }
 
-    public function save(MessageBag $messages): void
+    public function save(MessageBag $messages, ?string $identifier = null): void
     {
         $queryBuilder = $this->dbalConnection->createQueryBuilder()
             ->insert($this->tableName)
@@ -94,7 +94,7 @@ final class DoctrineDbalMessageStore implements ManagedStoreInterface, MessageSt
         ));
     }
 
-    public function load(): MessageBag
+    public function load(?string $identifier = null): MessageBag
     {
         $queryBuilder = $this->dbalConnection->createQueryBuilder()
             ->select('messages')

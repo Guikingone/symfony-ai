@@ -11,6 +11,8 @@
 
 namespace Symfony\AI\Platform\Message;
 
+use Symfony\AI\Platform\Metadata\ChatAwareTrait;
+use Symfony\AI\Platform\Metadata\ForkAwareTrait;
 use Symfony\AI\Platform\Metadata\MetadataAwareTrait;
 use Symfony\Component\Uid\AbstractUid;
 use Symfony\Component\Uid\TimeBasedUidInterface;
@@ -23,9 +25,10 @@ use Symfony\Component\Uid\Uuid;
  */
 class MessageBag implements \Countable, \IteratorAggregate
 {
+    use ChatAwareTrait;
+    use ForkAwareTrait;
+    use IdentifierAwareTrait;
     use MetadataAwareTrait;
-
-    private AbstractUid&TimeBasedUidInterface $id;
 
     /**
      * @var list<MessageInterface>
@@ -36,11 +39,6 @@ class MessageBag implements \Countable, \IteratorAggregate
     {
         $this->messages = array_values($messages);
         $this->id = Uuid::v7();
-    }
-
-    public function getId(): AbstractUid&TimeBasedUidInterface
-    {
-        return $this->id;
     }
 
     public function add(MessageInterface $message): void
@@ -94,6 +92,18 @@ class MessageBag implements \Countable, \IteratorAggregate
         return $messages;
     }
 
+    public function fork(UserMessage $message): self
+    {
+        $messages = clone $this;
+
+        $messages->withId(Uuid::v7());
+        $messages->forkedFrom = $this->getId();
+
+        $messages->add($message);
+
+        return $messages;
+    }
+
     public function withoutSystemMessage(): self
     {
         $messages = clone $this;
@@ -136,6 +146,11 @@ class MessageBag implements \Countable, \IteratorAggregate
         }
 
         return false;
+    }
+
+    public function getForkedFrom(): (AbstractUid&TimeBasedUidInterface)|null
+    {
+        return $this->forkedFrom;
     }
 
     public function count(): int
