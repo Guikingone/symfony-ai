@@ -26,7 +26,7 @@ $store = new MessageStore(
     accountId: env('CLOUDFLARE_ACCOUNT_ID'),
     apiKey: env('CLOUDFLARE_API_KEY'),
 );
-# $store->setup();
+$store->setup();
 
 $agent = new Agent($platform, 'gpt-4o-mini');
 $chat = new Chat($agent, $store);

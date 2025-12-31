@@ -9,8 +9,9 @@
  * file that was distributed with this source code.
  */
 
+use Doctrine\DBAL\DriverManager;
 use Symfony\AI\Agent\Agent;
-use Symfony\AI\Chat\Bridge\Cloudflare\MessageStore;
+use Symfony\AI\Chat\Bridge\Doctrine\DoctrineDbalMessageStore;
 use Symfony\AI\Chat\Chat;
 use Symfony\AI\Platform\Bridge\OpenAi\PlatformFactory;
 use Symfony\AI\Platform\Message\Message;
@@ -20,23 +21,23 @@ require_once dirname(__DIR__).'/bootstrap.php';
 
 $platform = PlatformFactory::create(env('OPENAI_API_KEY'), http_client());
 
-$store = new MessageStore(
-    http_client(),
-    namespace: 'symfony',
-    accountId: env('CLOUDFLARE_ACCOUNT_ID'),
-    apiKey: env('CLOUDFLARE_API_KEY'),
-);
+$connection = DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true]);
+
+$store = new DoctrineDbalMessageStore('symfony', $connection);
 $store->setup();
 
 $agent = new Agent($platform, 'gpt-4o-mini');
 $chat = new Chat($agent, $store);
 
-$messages = new MessageBag(
+$chat->initiate(new MessageBag(
     Message::forSystem('You are a helpful assistant. You only answer with short sentences.'),
-);
-
-$chat->initiate($messages);
+));
 $chat->submit(Message::ofUser('My name is Christopher.'));
-$message = $chat->submit(Message::ofUser('What is my name?'));
 
-echo $message->getContent().\PHP_EOL;
+$forkedChat = $chat->fork(Message::ofUser('Made a mistake about my name, my name is Oskar'), '_forked_for_oskar');
+
+$firstMessage = $chat->submit(Message::ofUser('What is my name?'));
+$forkedMessage = $forkedChat->submit(Message::ofUser('What is my name?'));
+
+echo sprintf('First chat: "%s"', $firstMessage->getContent()).\PHP_EOL;
+echo sprintf('Forked chat: "%s"', $forkedMessage->getContent()).\PHP_EOL;

@@ -11,6 +11,7 @@
 
 namespace Symfony\AI\Chat\Bridge\Cloudflare;
 
+use Symfony\AI\Chat\Exception\RuntimeException;
 use Symfony\AI\Chat\ManagedStoreInterface;
 use Symfony\AI\Chat\MessageBagNormalizer;
 use Symfony\AI\Chat\MessageNormalizer;
@@ -83,8 +84,10 @@ final class MessageStore implements ManagedStoreInterface, MessageStoreInterface
         $currentNamespace = $this->retrieveCurrentNamespace($identifier);
 
         $this->request('PUT', \sprintf('storage/kv/namespaces/%s/bulk', $currentNamespace['id']), [
-            'key' => $messages->getId()->toRfc4122(),
-            'value' => $this->serializer->serialize($messages, 'json'),
+            [
+                'key' => $messages->getId()->toRfc4122(),
+                'value' => $this->serializer->serialize($messages, 'json'),
+            ],
         ]);
     }
 
@@ -98,6 +101,10 @@ final class MessageStore implements ManagedStoreInterface, MessageStoreInterface
 
         $keys = $this->request('GET', \sprintf('storage/kv/namespaces/%s/keys', $currentNamespace['id']));
 
+        if ([] === $keys['result']) {
+            return new MessageBag();
+        }
+
         $messages = $this->request('POST', \sprintf('storage/kv/namespaces/%s/bulk/get', $currentNamespace['id']), [
             'keys' => array_map(
                 static fn (array $payload): string => $payload['name'],
@@ -105,7 +112,11 @@ final class MessageStore implements ManagedStoreInterface, MessageStoreInterface
             ),
         ]);
 
-        return $this->serializer->deserialize($messages['result']['values'], MessageBag::class, 'json');
+        if (1 < \count($messages['result']['values'])) {
+            throw new RuntimeException(\sprintf('More than one bag found for namespace "%s".', $identifier ?? $this->namespace));
+        }
+
+        return $this->serializer->deserialize(array_values($messages['result']['values'])[0] ?? [], MessageBag::class, 'json');
     }
 
     /**

@@ -21,12 +21,12 @@ use Symfony\AI\Platform\Message\UserMessage;
  */
 interface ChatInterface
 {
-    public function initiate(MessageBag $messages): void;
+    public function initiate(MessageBag $messages, ?string $identifier = null): void;
 
     /**
      * @throws ExceptionInterface When the chat submission fails due to agent errors
      */
-    public function submit(UserMessage $message): AssistantMessage;
+    public function submit(UserMessage $message, ?string $identifier = null): AssistantMessage;
 
     public function fork(UserMessage $message, string $identifier): self;
 }

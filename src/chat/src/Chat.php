@@ -30,16 +30,20 @@ final class Chat implements ChatInterface
     ) {
     }
 
-    public function initiate(MessageBag $messages): void
+    public function initiate(MessageBag $messages, ?string $identifier = null): void
     {
+        $this->name = $identifier ?? $this->name;
+
         $messages->setChat($this->name);
 
         $this->store->drop();
         $this->store->save($messages, $this->name);
     }
 
-    public function submit(UserMessage $message): AssistantMessage
+    public function submit(UserMessage $message, ?string $identifier = null): AssistantMessage
     {
+        $this->name = $identifier ?? $this->name;
+
         $messages = $this->store->load($this->name);
 
         $messages->add($message);
