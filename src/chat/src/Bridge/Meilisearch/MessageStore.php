@@ -19,7 +19,6 @@ use Symfony\AI\Chat\MessageStoreInterface;
 use Symfony\AI\Platform\Message\MessageBag;
 use Symfony\Component\Clock\ClockInterface;
 use Symfony\Component\Clock\MonotonicClock;
-use Symfony\Component\HttpClient\Exception\ClientException;
 use Symfony\Component\Serializer\Encoder\JsonEncoder;
 use Symfony\Component\Serializer\Normalizer\ArrayDenormalizer;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
@@ -124,22 +123,30 @@ final class MessageStore implements ManagedStoreInterface, MessageStoreInterface
 
     private function createIndex(string $indexName): void
     {
-        try {
-            $this->request('GET', \sprintf('indexes/%s', $indexName));
-        } catch (ClientException) {
-            $this->request('POST', 'indexes', [
-                'uid' => $indexName,
-                'primaryKey' => 'id',
-            ]);
+        $result = $this->httpClient->request('GET', \sprintf('%s/indexes/%s', $this->endpointUrl, $indexName), [
+            'headers' => [
+                'Authorization' => \sprintf('Bearer %s', $this->apiKey),
+            ],
+        ]);
 
-            $this->request('PATCH', \sprintf('indexes/%s/settings', $indexName), [
-                'filterableAttributes' => [
-                    'chat',
-                ],
-                'sortableAttributes' => [
-                    'addedAt',
-                ],
-            ]);
+        $payload = $result->toArray(false);
+
+        if (\array_key_exists('uid', $payload)) {
+            return;
         }
+
+        $this->request('POST', 'indexes', [
+            'uid' => $indexName,
+            'primaryKey' => 'id',
+        ]);
+
+        $this->request('PATCH', \sprintf('indexes/%s/settings', $indexName), [
+            'filterableAttributes' => [
+                'chat',
+            ],
+            'sortableAttributes' => [
+                'addedAt',
+            ],
+        ]);
     }
 }
