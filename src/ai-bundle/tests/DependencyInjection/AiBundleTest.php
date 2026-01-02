@@ -7082,7 +7082,7 @@ class AiBundleTest extends TestCase
         $this->assertTrue($container->hasDefinition('ai.platform.cartesia'));
         $this->assertTrue($container->hasDefinition('ai.platform.speech.cartesia.configuration'));
 
-        $speechConfigurationDefinition = $container->getDefinition('ai.platform.speech.cartesia');
+        $speechConfigurationDefinition = $container->getDefinition('ai.platform.speech.cartesia.configuration');
         $this->assertSame(SpeechConfiguration::class, $speechConfigurationDefinition->getClass());
         $this->assertCount(1, $speechConfigurationDefinition->getArguments());
 
@@ -7119,7 +7119,7 @@ class AiBundleTest extends TestCase
         $this->assertTrue($container->hasDefinition('ai.platform.elevenlabs'));
         $this->assertTrue($container->hasDefinition('ai.platform.speech.elevenlabs.configuration'));
 
-        $speechConfigurationDefinition = $container->getDefinition('ai.platform.speech.elevenlabs');
+        $speechConfigurationDefinition = $container->getDefinition('ai.platform.speech.elevenlabs.configuration');
         $this->assertSame(SpeechConfiguration::class, $speechConfigurationDefinition->getClass());
         $this->assertCount(1, $speechConfigurationDefinition->getArguments());
 
