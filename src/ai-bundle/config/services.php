@@ -217,6 +217,9 @@ return static function (ContainerConfigurator $container): void {
         ->set('ai.chat.message_bag.normalizer', MessageNormalizer::class)
             ->tag('serializer.normalizer')
 
+        ->set('ai.platform.result_normalizer', ResultNormalizer::class)
+            ->tag('serializer.normalizer')
+
         // commands
         ->set('ai.command.chat', AgentCallCommand::class)
             ->args([

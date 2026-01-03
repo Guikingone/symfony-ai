@@ -14,12 +14,15 @@ namespace Symfony\AI\Platform;
 use Symfony\AI\Platform\ModelCatalog\ModelCatalogInterface;
 use Symfony\AI\Platform\Result\DeferredResult;
 use Symfony\AI\Platform\Result\InMemoryRawResult;
+use Symfony\AI\Platform\Result\TextResult;
+use Symfony\AI\Platform\Result\ResultInterface;
+use Symfony\AI\Platform\Exception\RuntimeException;
 use Symfony\Component\Cache\Adapter\TagAwareAdapterInterface;
 use Symfony\Component\Clock\ClockInterface;
 use Symfony\Component\Clock\MonotonicClock;
 use Symfony\Component\String\UnicodeString;
 use Symfony\Contracts\Cache\CacheInterface;
-use Symfony\Contracts\Cache\ItemInterface;
+use Symfony\Contracts\Cache\ItemInterface;;
 
 /**
  * @author Guillaume Loulier <personal@guillaumeloulier.fr>
@@ -30,6 +33,9 @@ final class CachedPlatform implements PlatformInterface
         private readonly PlatformInterface $platform,
         private readonly ClockInterface $clock = new MonotonicClock(),
         private readonly (CacheInterface&TagAwareAdapterInterface)|null $cache = null,
+        private readonly SerializerInterface&NormalizerInterface&DenormalizerInterface $serializer = new Serializer([
+            new ResultNormalizer(),
+        ], [new JsonEncoder()]),
         private readonly ?string $cacheKey = null,
         private readonly ?int $cacheTtl = null,
     ) {
@@ -57,25 +63,34 @@ final class CachedPlatform implements PlatformInterface
 
             $result = $deferredResult->getResult();
 
-            $result->getMetadata()->set([
-                'cached' => true,
-                'cache_key' => $cacheKey,
-                'cached_at' => $this->clock->now()->getTimestamp(),
-            ]);
-
             return [
-                'result' => $result,
+                'content' => $this->serializer->normalize($result->getContent()),
                 'raw_data' => $deferredResult->getRawResult()->getData(),
+                'metadata' => $result->getMetadata()->all(),
+                'result_class' => $result::class,
+                'cached_at' => $this->clock->now()->getTimestamp(),
+                'cache_key' => $cacheKey,
             ];
         });
 
+        $restoredResult = $this->serializer->denormalize($cached['content'], context: [
+            'class' => $cached['result_class'],
+        ]);
+
+        $restoredResult->getMetadata()->set([
+            ...$cached['metadata'],
+            'cached' => true,
+            'cache_key' => $cached['cache_key'],
+            'cached_at' => $cached['cached_at'],
+        ]);
+
         $result = new DeferredResult(
-            new CachedResultConverter($cached['result']),
+            new CachedResultConverter($restoredResult),
             new InMemoryRawResult($cached['raw_data']),
             $options,
         );
 
-        $result->getMetadata()->merge($cached['result']->getMetadata()->all());
+        $result->getMetadata()->merge($restoredResult->getMetadata()->all());
 
         return $result;
     }

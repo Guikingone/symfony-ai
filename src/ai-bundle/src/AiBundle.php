@@ -490,6 +490,7 @@ final class AiBundle extends AbstractBundle
                         new Reference($cachedPlatformConfig['platform']),
                         new Reference(ClockInterface::class),
                         new Reference($cachedPlatformConfig['service'], ContainerInterface::NULL_ON_INVALID_REFERENCE),
+                        new Reference('serializer'),
                         $cachedPlatformConfig['cache_key'] ?? $name,
                         $cachedPlatformConfig['ttl'],
                     ])
