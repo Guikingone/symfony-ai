@@ -526,15 +526,16 @@ Cached Platform Calls
 
 Thanks to Symfony's Cache component, platform calls can be cached to reduce calls and resources consumption::
 
-    use Symfony\AI\Platform\Bridge\Ollama\PlatformFactory;
-    use Symfony\AI\Platform\CachedPlatform;
+    use Symfony\AI\Agent\Agent;
+    use Symfony\AI\Platform\Bridge\Cache\CachedPlatform;
+    use Symfony\AI\Platform\Bridge\OpenAi\PlatformFactory;
     use Symfony\AI\Platform\Message\Message;
     use Symfony\AI\Platform\Message\MessageBag;
     use Symfony\Component\Cache\Adapter\ArrayAdapter;
     use Symfony\Component\Cache\Adapter\TagAwareAdapter;
 
-    $platform = PlatformFactory::create($apiKey, eventDispatcher: $dispatcher);
-    $cachedPlatform = new CachedPlatform($platform, new TagAwareAdapter(new ArrayAdapter());
+    $platform = PlatformFactory::create($apiKey, http_client());
+    $cachedPlatform = new CachedPlatform($platform, cache: new TagAwareAdapter(new ArrayAdapter()));
 
     $firstResult = $cachedPlatform->invoke('gpt-4o-mini', new MessageBag(Message::ofUser('What is the capital of France?')));
 

@@ -14,13 +14,15 @@ use Symfony\AI\Platform\Bridge\Cache\CachedPlatform;
 use Symfony\AI\Platform\Bridge\OpenAi\PlatformFactory;
 use Symfony\AI\Platform\Message\Message;
 use Symfony\AI\Platform\Message\MessageBag;
-use Symfony\Component\Cache\Adapter\ArrayAdapter;
-use Symfony\Component\Cache\Adapter\TagAwareAdapter;
+use Symfony\Component\Cache\Adapter\RedisTagAwareAdapter;
 
 require_once dirname(__DIR__).'/bootstrap.php';
 
 $platform = PlatformFactory::create(env('OPENAI_API_KEY'), http_client());
-$cachedPlatform = new CachedPlatform($platform, cache: new TagAwareAdapter(new ArrayAdapter()));
+$cachedPlatform = new CachedPlatform($platform, cache: new RedisTagAwareAdapter(new Redis([
+    'host' => 'localhost',
+    'port' => 6379,
+])));
 
 $agent = new Agent($cachedPlatform, 'gpt-5-mini');
 $messages = new MessageBag(
