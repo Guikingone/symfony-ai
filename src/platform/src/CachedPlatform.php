@@ -13,9 +13,11 @@ namespace Symfony\AI\Platform;
 
 use Symfony\AI\Platform\ModelCatalog\ModelCatalogInterface;
 use Symfony\AI\Platform\Result\DeferredResult;
+use Symfony\AI\Platform\Result\InMemoryRawResult;
 use Symfony\Component\Cache\Adapter\TagAwareAdapterInterface;
 use Symfony\Component\Clock\ClockInterface;
 use Symfony\Component\Clock\MonotonicClock;
+use Symfony\Component\String\UnicodeString;
 use Symfony\Contracts\Cache\CacheInterface;
 use Symfony\Contracts\Cache\ItemInterface;
 
@@ -34,35 +36,47 @@ final class CachedPlatform implements PlatformInterface
 
     public function invoke(string $model, array|string|object $input, array $options = []): DeferredResult
     {
-        $invokeCall = fn (string $model, array|string|object $input, array $options = []): DeferredResult => $this->platform->invoke($model, $input, $options);
-
-        if ($this->cache instanceof CacheInterface && (\array_key_exists('prompt_cache_key', $options) && '' !== $options['prompt_cache_key'])) {
-            $cacheKey = \sprintf('%s_%s_%s', $this->cacheKey ?? $options['prompt_cache_key'], md5($model), \is_string($input) ? md5($input) : md5(json_encode($input)));
-
-            unset($options['prompt_cache_key']);
-
-            return $this->cache->get($cacheKey, function (ItemInterface $item) use ($invokeCall, $model, $input, $options, $cacheKey): DeferredResult {
-                $item->tag($model);
-
-                $result = $invokeCall($model, $input, $options);
-
-                $result = new DeferredResult(
-                    $result->getResultConverter(),
-                    $result->getRawResult(),
-                    $options,
-                );
-
-                $result->getMetadata()->set([
-                    'cached' => true,
-                    'cache_key' => $cacheKey,
-                    'cached_at' => $this->clock->now()->getTimestamp(),
-                ]);
-
-                return $result;
-            });
+        if (null === $this->cache || !\array_key_exists('prompt_cache_key', $options) || '' === $options['prompt_cache_key']) {
+            return $this->platform->invoke($model, $input, $options);
         }
 
-        return $invokeCall($model, $input, $options);
+        $cacheKey = \sprintf('%s_%s_%s', $this->cacheKey ?? $options['prompt_cache_key'], md5($model), \is_string($input) ? md5($input) : md5(json_encode($input)));
+        $ttl = $options['prompt_cache_ttl'] ?? null;
+
+        unset($options['prompt_cache_key'], $options['prompt_cache_ttl']);
+
+        $cached = $this->cache->get($cacheKey, function (ItemInterface $item) use ($model, $input, $options, $cacheKey, $ttl): array {
+            $item->tag((new UnicodeString($model))->camel());
+
+            if (null !== $ttl) {
+                $item->expiresAfter($ttl);
+            }
+
+            $deferredResult = $this->platform->invoke($model, $input, $options);
+
+            $result = $deferredResult->getResult();
+
+            $result->getMetadata()->set([
+                'cached' => true,
+                'cache_key' => $cacheKey,
+                'cached_at' => $this->clock->now()->getTimestamp(),
+            ]);
+
+            return [
+                'result' => $result,
+                'raw_data' => $deferredResult->getRawResult()->getData(),
+            ];
+        });
+
+        $result = new DeferredResult(
+            new CachedResultConverter($cached['result']),
+            new InMemoryRawResult($cached['raw_data']),
+            $options,
+        );
+
+        $result->getMetadata()->merge($cached['result']->getMetadata()->all());
+
+        return $result;
     }
 
     public function getModelCatalog(): ModelCatalogInterface

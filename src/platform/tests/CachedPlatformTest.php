@@ -59,4 +59,8 @@ final class CachedPlatformTest extends TestCase
         $this->assertTrue($secondDeferredResult->getMetadata()->has('cached_at'));
         $this->assertSame($deferredResult->getMetadata()->get('cached_at'), $secondDeferredResult->getMetadata()->get('cached_at'));
     }
+
+    public function testPlatformCanReturnCachedResultWhenCalledTwiceWhileUsingCustomTtl()
+    {
+    }
 }
