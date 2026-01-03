@@ -491,6 +491,7 @@ final class AiBundle extends AbstractBundle
                         new Reference(ClockInterface::class),
                         new Reference($cachedPlatformConfig['service'], ContainerInterface::NULL_ON_INVALID_REFERENCE),
                         $cachedPlatformConfig['cache_key'] ?? $name,
+                        $cachedPlatformConfig['ttl'],
                     ])
                     ->addTag('proxy', ['interface' => PlatformInterface::class])
                     ->addTag('ai.platform', ['name' => 'cache.'.$name]);

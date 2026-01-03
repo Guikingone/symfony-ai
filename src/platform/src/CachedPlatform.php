@@ -31,6 +31,7 @@ final class CachedPlatform implements PlatformInterface
         private readonly ClockInterface $clock = new MonotonicClock(),
         private readonly (CacheInterface&TagAwareAdapterInterface)|null $cache = null,
         private readonly ?string $cacheKey = null,
+        private readonly ?int $cacheTtl = null,
     ) {
     }
 
@@ -41,7 +42,7 @@ final class CachedPlatform implements PlatformInterface
         }
 
         $cacheKey = \sprintf('%s_%s_%s', $this->cacheKey ?? $options['prompt_cache_key'], md5($model), \is_string($input) ? md5($input) : md5(json_encode($input)));
-        $ttl = $options['prompt_cache_ttl'] ?? null;
+        $ttl = $options['prompt_cache_ttl'] ?? $this->cacheTtl;
 
         unset($options['prompt_cache_key'], $options['prompt_cache_ttl']);
 

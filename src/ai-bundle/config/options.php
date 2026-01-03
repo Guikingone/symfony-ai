@@ -572,6 +572,7 @@ return static function (DefinitionConfigurator $configurator): void {
                                 ->stringNode('cache_key')
                                     ->info('The name of the store will be used if the key is not set')
                                 ->end()
+                                ->stringNode('ttl')->end()
                                 ->stringNode('strategy')->end()
                             ->end()
                         ->end()
