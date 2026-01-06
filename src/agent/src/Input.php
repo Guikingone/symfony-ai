@@ -11,7 +11,7 @@
 
 namespace Symfony\AI\Agent;
 
-use Symfony\AI\Platform\Message\MessageBag;
+use Symfony\AI\Platform\Message\MessageBagInterface;
 
 /**
  * @author Christopher Hertel <mail@christopher-hertel.de>
@@ -23,7 +23,7 @@ final class Input
      */
     public function __construct(
         private string $model,
-        private MessageBag $messageBag,
+        private MessageBagInterface $messageBag,
         private array $options = [],
     ) {
     }
@@ -38,12 +38,12 @@ final class Input
         $this->model = $model;
     }
 
-    public function getMessageBag(): MessageBag
+    public function getMessageBag(): MessageBagInterface
     {
         return $this->messageBag;
     }
 
-    public function setMessageBag(MessageBag $messageBag): void
+    public function setMessageBag(MessageBagInterface $messageBag): void
     {
         $this->messageBag = $messageBag;
     }

@@ -11,14 +11,14 @@
 
 namespace Symfony\AI\Chat;
 
-use Symfony\AI\Platform\Message\MessageBag;
+use Symfony\AI\Platform\Message\MessageBagInterface;
 
 /**
  * @author Christopher Hertel <mail@christopher-hertel.de>
  */
 interface MessageStoreInterface
 {
-    public function save(MessageBag $messages): void;
+    public function save(MessageBagInterface $messages): void;
 
-    public function load(): MessageBag;
+    public function load(): MessageBagInterface;
 }

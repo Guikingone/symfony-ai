@@ -21,7 +21,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @implements \IteratorAggregate<int, MessageInterface>
  */
-class MessageBag implements \Countable, \IteratorAggregate
+class MessageBag implements MessageBagInterface, \Countable, \IteratorAggregate
 {
     use MetadataAwareTrait;
 
@@ -78,7 +78,7 @@ class MessageBag implements \Countable, \IteratorAggregate
         return null;
     }
 
-    public function with(MessageInterface $message): self
+    public function with(MessageInterface $message): MessageBagInterface
     {
         $messages = clone $this;
         $messages->add($message);
@@ -86,7 +86,7 @@ class MessageBag implements \Countable, \IteratorAggregate
         return $messages;
     }
 
-    public function merge(self $messageBag): self
+    public function merge(self $messageBag): MessageBagInterface
     {
         $messages = clone $this;
         $messages->messages = array_merge($messages->messages, $messageBag->getMessages());
@@ -94,7 +94,7 @@ class MessageBag implements \Countable, \IteratorAggregate
         return $messages;
     }
 
-    public function withoutSystemMessage(): self
+    public function withoutSystemMessage(): MessageBagInterface
     {
         $messages = clone $this;
         $messages->messages = array_values(array_filter(
@@ -108,7 +108,7 @@ class MessageBag implements \Countable, \IteratorAggregate
     /**
      * Clones the MessageBag without previous system message and prepends the given one.
      */
-    public function withSystemMessage(SystemMessage $message): self
+    public function withSystemMessage(SystemMessage $message): MessageBagInterface
     {
         $messages = $this->withoutSystemMessage();
         $messages->messages = array_merge([$message], $messages->messages);
