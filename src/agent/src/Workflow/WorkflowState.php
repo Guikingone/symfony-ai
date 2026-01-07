@@ -26,8 +26,13 @@ final class WorkflowState implements WorkflowStateInterface
     private ?ResultInterface $result = null;
 
     public function __construct(
-        private readonly array $options = [],
+        private readonly WorkflowStateEnum $state,
     ) {
+    }
+
+    public function getState(): WorkflowStateEnum
+    {
+        return $this->state;
     }
 
     public function setResult(ResultInterface $result): void
@@ -43,6 +48,11 @@ final class WorkflowState implements WorkflowStateInterface
     public function addContext(string $key, mixed $value = null): void
     {
         $this->context[$key] = $value;
+    }
+
+    public function setContext(array $context): void
+    {
+        $this->context = $context;
     }
 
     public function getContext(): array

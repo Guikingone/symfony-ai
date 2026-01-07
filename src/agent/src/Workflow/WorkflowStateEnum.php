@@ -14,9 +14,8 @@ namespace Symfony\AI\Agent\Workflow;
 /**
  * @author Guillaume Loulier <personal@guillaumeloulier.fr>
  */
-interface ManagedWorkflowStoreInterface
+enum WorkflowStateEnum: string
 {
-    public function setup(array $options = []): void;
-
-    public function drop(): void;
+    case STARTED = 'started';
+    case FINISHED ='finished';
 }

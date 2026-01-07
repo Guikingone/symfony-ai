@@ -13,12 +13,12 @@ namespace Symfony\AI\Agent\Workflow\Bridge\Cache;
 
 use Symfony\AI\Agent\Workflow\ManagedWorkflowStoreInterface;
 use Symfony\AI\Agent\Workflow\WorkflowStateInterface;
-use Symfony\AI\Agent\Workflow\WorkflowStoreInterface;
+use Symfony\AI\Agent\Workflow\StoreInterface;
 
 /**
  * @author Guillaume Loulier <personal@guillaumeloulier.fr>
  */
-final class CacheWorkflowStore implements WorkflowStoreInterface, ManagedWorkflowStoreInterface
+final class CacheWorkflowStore implements StoreInterface, ManagedWorkflowStoreInterface
 {
     public function __construct(
         private readonly CacheInterface $cache,

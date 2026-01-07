@@ -11,14 +11,14 @@
 
 namespace Symfony\AI\Agent\Workflow\Bridge\Local;
 
-use Symfony\AI\Agent\Workflow\ManagedWorkflowStoreInterface;
+use Symfony\AI\Agent\Workflow\ManagedStoreInterface;
 use Symfony\AI\Agent\Workflow\WorkflowStateInterface;
-use Symfony\AI\Agent\Workflow\WorkflowStoreInterface;
+use Symfony\AI\Agent\Workflow\StoreInterface;
 
 /**
  * @author Guillaume Loulier <personal@guillaumeloulier.fr>
  */
-final class InMemoryWorkflowStore implements ManagedWorkflowStoreInterface, WorkflowStoreInterface
+final class InMemoryStore implements ManagedStoreInterface, StoreInterface
 {
     /**
      * @var WorkflowStateInterface[]

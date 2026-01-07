@@ -11,8 +11,8 @@
 
 namespace Symfony\AI\Agent\Workflow;
 
-use Symfony\AI\Agent\Workflow\WorkflowStepInterface;
 use Symfony\Component\Workflow\Workflow as SymfonyWorkflow;
+use Symfony\AI\Platform\Result\ResultInterface;
 
 /**
  * @author Guillaume Loulier <personal@guillaumeloulier.fr>
@@ -25,8 +25,8 @@ final class Workflow
     private array $steps = [];
 
     public function __construct(
-        private readonly string $name,
-        private readonly WorkflowStoreInterface $store,
+        private readonly string                    $name,
+        private readonly StoreInterface            $store,
         private readonly ?EventDispatcherInterface $eventDispatcher = null,
     ) {
     }
@@ -40,11 +40,11 @@ final class Workflow
         return $this;
     }
 
-    public function call(array $options = [])
+    public function call(array $options = []): ResultInterface
     {
         $workflow = $this->build();
 
-        $state = new WorkflowState($options);
+        $state = new WorkflowState(WorkflowStateEnum::STARTED);
 
         $this->eventDispatcher?->dispatch(new WorkflowStartedEvent($state));
 
@@ -65,7 +65,20 @@ final class Workflow
             }
         }
 
+        if ($workflow->can($state, WorkflowStateEnum::FINISHED->value)) {
+            $workflow->apply($state, WorkflowStateEnum::FINISHED->value);
+
+            $this->store->save($state);
+        }
+
         $this->eventDispatcher?->dispatch(new WorkflowFinishedEvent($state));
+
+        $result = $state->getResult();
+        if (!$result instanceof ResultInterface) {
+            throw new RuntimeException('No result set during execution.');
+        }
+
+        return $result;
     }
 
     public function getName(): string

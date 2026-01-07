@@ -14,9 +14,9 @@ namespace Symfony\AI\Agent\Workflow;
 /**
  * @author Guillaume Loulier <personal@guillaumeloulier.fr>
  */
-interface WorkflowStoreInterface
+interface ManagedStoreInterface
 {
-    public function save(WorkflowStateInterface $state): void;
+    public function setup(array $options = []): void;
 
-    public function load(string $name): WorkflowStateInterface;
+    public function drop(): void;
 }
