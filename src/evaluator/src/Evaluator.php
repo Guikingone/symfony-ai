@@ -21,8 +21,10 @@ final class Evaluator implements EvaluatorInterface
     /**
      * @var ScorerInterface[]
      */
-    public function __construct(private readonly iterable $scorers)
-    {
+    public function __construct(
+        private readonly EvaluatorStrategy $strategy,
+        private readonly iterable $scorers,
+    ) {
     }
 
     public function evaluate(DeferredResult $deferredResult, array $options = []): float
