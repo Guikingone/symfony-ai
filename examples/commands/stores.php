@@ -31,6 +31,7 @@ use Symfony\AI\Store\Bridge\Qdrant\Store as QdrantStore;
 use Symfony\AI\Store\Bridge\Redis\Store as RedisStore;
 use Symfony\AI\Store\Bridge\SurrealDb\Store as SurrealDbStore;
 use Symfony\AI\Store\Bridge\Typesense\Store as TypesenseStore;
+use Symfony\AI\Store\Bridge\Vektor\Store as VektorStore;
 use Symfony\AI\Store\Bridge\Weaviate\Store as WeaviateStore;
 use Symfony\AI\Store\Command\DropStoreCommand;
 use Symfony\AI\Store\Command\SetupStoreCommand;
@@ -140,6 +141,7 @@ $factories = [
         env('WEAVIATE_API_KEY'),
         'symfony',
     ),
+    'vektor' => static fn (): VektorStore => new VektorStore(sys_get_temp_dir()),
 ];
 
 $storesIds = array_keys($factories);

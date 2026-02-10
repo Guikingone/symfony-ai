@@ -12,14 +12,17 @@
 namespace Symfony\AI\Store\Bridge\Vektor\Tests;
 
 use PHPUnit\Framework\TestCase;
+use Symfony\AI\Platform\Vector\Vector;
 use Symfony\AI\Store\Bridge\Vektor\Store;
-use Symfony\Component\HttpClient\MockHttpClient;
+use Symfony\AI\Store\Document\VectorDocument;
+use Symfony\Component\Filesystem\Filesystem;
+use Symfony\Component\Uid\Uuid;
 
 final class StoreTest extends TestCase
 {
     public function testStoreCannotSetupWithOptions()
     {
-        $store = new Store(new MockHttpClient(), 'foo', 'http://127.0.0.1:8080');
+        $store = new Store(sys_get_temp_dir());
 
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('No supported options.');
@@ -27,5 +30,59 @@ final class StoreTest extends TestCase
         $store->setup([
             'foo' => 'bar',
         ]);
+    }
+
+    public function testStoreCannotDropUndefinedDirectory()
+    {
+        $filesystem = $this->createMock(Filesystem::class);
+        $filesystem->expects($this->once())->method('exists')->willReturn(false);
+        $filesystem->expects($this->never())->method('remove');
+
+        $store = new Store(sys_get_temp_dir(), filesystem: $filesystem);
+
+        $store->drop();
+    }
+
+    public function testStoreCanDropExistingDirectory()
+    {
+        $filesystem = $this->createMock(Filesystem::class);
+        $filesystem->expects($this->once())->method('exists')->willReturn(true);
+        $filesystem->expects($this->once())->method('remove');
+
+        $store = new Store(sys_get_temp_dir(), filesystem: $filesystem);
+
+        $store->drop();
+    }
+
+    public function testStoreCanOptimize()
+    {
+        $store = new Store(sys_get_temp_dir());
+        $store->setup();
+
+        $store->drop([
+            'optimize' => true,
+        ]);
+
+        $results = $store->query(new Vector([0.1, 0.2, 0.3]));
+
+        $this->assertCount(0, iterator_to_array($results));
+
+        $store->drop();
+    }
+
+    public function testStoreCanAddThenSearch()
+    {
+        $store = new Store(sys_get_temp_dir(), 3);
+        $store->setup();
+
+        $store->add([
+            new VectorDocument(Uuid::v4(), new Vector([0.1, 0.2, 0.3])),
+        ]);
+
+        $results = $store->query(new Vector([0.1, 0.2, 0.3]));
+
+        $this->assertCount(1, iterator_to_array($results));
+
+        $store->drop();
     }
 }

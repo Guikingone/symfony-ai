@@ -11,12 +11,18 @@
 
 namespace Symfony\AI\Store\Bridge\Vektor;
 
+use Centamiv\Vektor\Core\Config;
+use Centamiv\Vektor\Services\Indexer;
+use Centamiv\Vektor\Services\Optimizer;
+use Centamiv\Vektor\Services\Searcher;
+use Symfony\AI\Platform\Vector\NullVector;
 use Symfony\AI\Platform\Vector\Vector;
+use Symfony\AI\Store\Document\Metadata;
 use Symfony\AI\Store\Document\VectorDocument;
 use Symfony\AI\Store\Exception\InvalidArgumentException;
 use Symfony\AI\Store\ManagedStoreInterface;
 use Symfony\AI\Store\StoreInterface;
-use Symfony\Contracts\HttpClient\HttpClientInterface;
+use Symfony\Component\Filesystem\Filesystem;
 
 /**
  * @author Guillaume Loulier <personal@guillaumeloulier.fr>
@@ -24,9 +30,9 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 final class Store implements ManagedStoreInterface, StoreInterface
 {
     public function __construct(
-        private readonly HttpClientInterface $httpClient,
-        #[\SensitiveParameter] private readonly string $apiKey,
-        private readonly string $endpoint,
+        private readonly string $storagePath,
+        private readonly int $dimensions = 1536,
+        private readonly Filesystem $filesystem = new Filesystem(),
     ) {
     }
 
@@ -35,11 +41,31 @@ final class Store implements ManagedStoreInterface, StoreInterface
         if ([] !== $options) {
             throw new InvalidArgumentException('No supported options.');
         }
+
+        if ($this->filesystem->exists($this->storagePath.'/vektor')) {
+            return;
+        }
+
+        $this->filesystem->mkdir($this->storagePath.'/vektor');
+
+        Config::setDataDir($this->storagePath.'/vektor');
+        Config::setDimensions($this->dimensions);
     }
 
     public function drop(array $options = []): void
     {
-        // TODO: Implement drop() method.
+        if ($options['optimize'] ?? false) {
+            $optimizer = new Optimizer();
+            $optimizer->run();
+
+            return;
+        }
+
+        if (!$this->filesystem->exists($this->storagePath.'/vektor')) {
+            return;
+        }
+
+        $this->filesystem->remove($this->storagePath.'/vektor');
     }
 
     public function add(VectorDocument|array $documents): void
@@ -48,12 +74,14 @@ final class Store implements ManagedStoreInterface, StoreInterface
             $documents = [$documents];
         }
 
+        $indexer = new Indexer();
+
         foreach ($documents as $document) {
-            $this->request('POST', 'insert', [
-                'id' => '',
-                'vector' => $document->vector->getData(),
-                'metadata' => $document->metadata->getArrayCopy(),
-            ]);
+            $indexer->insert(
+                $document->id->toRfc4122(),
+                $document->vector->getData(),
+                $document->metadata->getArrayCopy(),
+            );
         }
     }
 
@@ -63,29 +91,40 @@ final class Store implements ManagedStoreInterface, StoreInterface
             $ids = [$ids];
         }
 
+        $indexer = new Indexer();
+
         foreach ($ids as $id) {
-            $this->request('DELETE', 'delete', [
-                'id' => $id,
-            ]);
+            $indexer->delete($id);
         }
     }
 
     public function query(Vector $vector, array $options = []): iterable
     {
-        $results = $this->request('GET', 'search', [
-            'vector' => $vector->getData(),
-            'k' => $options['k'] ?? 10,
-        ]);
+        $searcher = new Searcher();
 
+        $results = $searcher->search($vector->getData(), $options['k'] ?? 10, true, true);
+
+        foreach ($results as $result) {
+            yield $this->convertToVectorDocument($result);
+        }
     }
 
-    private function request(string $method, string $endpoint, array $payload): array
+    /**
+     * @param array{
+     *     id: string,
+     *     score: float,
+     *     vector: float[],
+     *     metadata: mixed[],
+     * } $data
+     */
+    private function convertToVectorDocument(array $data): VectorDocument
     {
-        $response = $this->httpClient->request($method, \sprintf('%s/%s', $this->endpoint, $endpoint), [
-            'auth_bearer' => $this->apiKey,
-            'json' => $payload,
-        ]);
+        $id = $data['id'] ?? throw new InvalidArgumentException('Missing "id" field in the document data.');
 
-        return $response->toArray();
+        $vector = !\array_key_exists('vector', $data) || null === $data['vector']
+            ? new NullVector()
+            : new Vector($data['vector']);
+
+        return new VectorDocument($id, $vector, new Metadata($data['metadata']), $data['score'] ?? null);
     }
 }
