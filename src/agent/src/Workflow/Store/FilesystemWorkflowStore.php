@@ -12,7 +12,6 @@
 namespace Symfony\AI\Agent\Workflow\Store;
 
 use Symfony\AI\Agent\Workflow\ManagedWorkflowStoreInterface;
-use Symfony\AI\Agent\Workflow\WorkflowState;
 use Symfony\AI\Agent\Workflow\WorkflowStateInterface;
 use Symfony\AI\Agent\Workflow\WorkflowStateNormalizer;
 use Symfony\AI\Agent\Workflow\WorkflowStoreInterface;
@@ -41,7 +40,7 @@ final class FilesystemWorkflowStore implements WorkflowStoreInterface, ManagedWo
 
     public function setup(array $options = []): void
     {
-        $this->filesystem->mkdir($this->storagePath, 0755, true);
+        $this->filesystem->mkdir($this->storagePath, 0755);
     }
 
     public function drop(array $options = []): void
@@ -53,7 +52,6 @@ final class FilesystemWorkflowStore implements WorkflowStoreInterface, ManagedWo
     {
         $filename = $this->getFilename($state->getId());
 
-        $this->filesystem->touch($filename);
         $this->filesystem->dumpFile($filename, $this->serializer->serialize($state, 'json'));
     }
 
@@ -67,7 +65,7 @@ final class FilesystemWorkflowStore implements WorkflowStoreInterface, ManagedWo
 
         $state = $this->filesystem->readFile($filename);
 
-        return $this->serializer->deserialize($state, WorkflowState::class, 'json');
+        return $this->serializer->deserialize($state, WorkflowStateInterface::class, 'json');
     }
 
     public function remove(string $id): void
@@ -77,6 +75,6 @@ final class FilesystemWorkflowStore implements WorkflowStoreInterface, ManagedWo
 
     private function getFilename(string $id): string
     {
-        return $this->storagePath.'/'.$id.'.json';
+        return \sprintf('%s/%s.json', $this->storagePath, $id);
     }
 }

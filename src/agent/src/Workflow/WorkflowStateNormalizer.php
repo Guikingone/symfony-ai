@@ -19,17 +19,35 @@ use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
  */
 final class WorkflowStateNormalizer implements NormalizerInterface, DenormalizerInterface
 {
-    public function denormalize(mixed $data, string $type, ?string $format = null, array $context = []): mixed
+    public function denormalize(mixed $data, string $type, ?string $format = null, array $context = []): WorkflowStateInterface
     {
-        // TODO: Implement denormalize() method.
+        $workflowState = new WorkflowState(
+            $data['id'],
+            $data['context'],
+            $data['metadata'],
+            WorkflowStatus::from($data['status']),
+            \DateTimeImmutable::createFromFormat(\DateTimeInterface::RFC3339, $data['createdAt']),
+            \DateTimeImmutable::createFromFormat(\DateTimeInterface::RFC3339, $data['updatedAt']),
+        );
+
+        foreach ($data['errors'] as $error) {
+            $workflowState->addError(new WorkflowError(
+                $error['message'],
+                $error['code'],
+                $error['type'],
+                $error['timestamp'],
+            ));
+        }
+
+        return $workflowState;
     }
 
     public function supportsDenormalization(mixed $data, string $type, ?string $format = null, array $context = []): bool
     {
-        // TODO: Implement supportsDenormalization() method.
+        return WorkflowStateInterface::class === $type;
     }
 
-    public function normalize(mixed $data, ?string $format = null, array $context = []): array|string|int|float|bool|\ArrayObject|null
+    public function normalize(mixed $data, ?string $format = null, array $context = []): array
     {
         if (!$data instanceof WorkflowStateInterface) {
             return [];
@@ -37,7 +55,6 @@ final class WorkflowStateNormalizer implements NormalizerInterface, Denormalizer
 
         return [
             'id' => $data->getId(),
-            'currentStep' => $data->getCurrentStep(),
             'context' => $data->getContext(),
             'metadata' => $data->getMetadata(),
             'status' => $data->getStatus()->value,

@@ -16,7 +16,12 @@ use Symfony\AI\Platform\Result\ResultInterface;
 
 interface WorkflowExecutorInterface
 {
-    public function execute(AgentInterface $agent, WorkflowStateInterface $state, array $options = []): ResultInterface;
+    public function execute(AgentInterface $agent, WorkflowStateInterface $state): ResultInterface;
 
-    public function resume(string $id): ResultInterface;
+    /**
+     * Resume a paused or failed workflow from its current state.
+     *
+     * @throws RuntimeException If workflow not found, already completed, or cancelled
+     */
+    public function resume(string $id, AgentInterface $agent): ResultInterface;
 }

@@ -81,4 +81,15 @@ final class TraceableWorkflowStore implements WorkflowStoreInterface, ManagedWor
 
         return $this->store->load($id);
     }
+
+    public function remove(string $id): void
+    {
+        $this->calls[] = [
+            'method' => 'remove',
+            'id' => $id,
+            'called_at' => $this->clock->now(),
+        ];
+
+        $this->store->remove($id);
+    }
 }

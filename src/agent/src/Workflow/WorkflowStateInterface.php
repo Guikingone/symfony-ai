@@ -20,8 +20,6 @@ interface WorkflowStateInterface
 
     public function getCurrentStep(): string;
 
-    public function setCurrentStep(string $step): void;
-
     public function getContext(): array;
 
     public function setContext(array $context): void;

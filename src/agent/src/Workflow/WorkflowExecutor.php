@@ -11,50 +11,48 @@
 
 namespace Symfony\AI\Agent\Workflow;
 
-use Psr\EventDispatcher\EventDispatcherInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use Symfony\AI\Agent\AgentInterface;
 use Symfony\AI\Agent\Exception\RuntimeException;
-use Symfony\AI\Agent\Workflow\Bridge\SymfonyWorkflowAdapter;
-use Symfony\AI\Agent\Workflow\Event\TransitionEvent;
+use Symfony\AI\Agent\Workflow\Action\ActionInterface;
 use Symfony\AI\Agent\Workflow\Event\WorkflowCompletedEvent;
 use Symfony\AI\Agent\Workflow\Event\WorkflowFailedEvent;
 use Symfony\AI\Agent\Workflow\Event\WorkflowStartedEvent;
-use Symfony\AI\Agent\Workflow\Step\StepExecutorInterface;
-use Symfony\AI\Agent\Workflow\Step\StepInterface;
-use Symfony\AI\Agent\Workflow\Transition\TransitionInterface;
-use Symfony\AI\Agent\Workflow\Transition\TransitionRegistryInterface;
 use Symfony\AI\Platform\Result\ResultInterface;
+use Symfony\AI\Platform\Result\TextResult;
 use Symfony\Component\Clock\ClockInterface;
 use Symfony\Component\Clock\MonotonicClock;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use Symfony\Component\Workflow\Definition;
+use Symfony\Component\Workflow\StateMachine;
+use Symfony\Component\Workflow\Transition;
 
 /**
  * @author Guillaume Loulier <personal@guillaumeloulier.fr>
  */
 final class WorkflowExecutor implements WorkflowExecutorInterface
 {
-    /** @var StepInterface[] */
-    private array $steps = [];
+    private readonly StateMachine $stateMachine;
 
-    private readonly SymfonyWorkflowAdapter $workflowAdapter;
-
+    /**
+     * @param array{
+     *     definition: Definition,
+     *     stateMachine: StateMachine,
+     *     placeActions: array<string, ActionInterface[]>,
+     *     transitionGuards: array<string, array<\Closure>>,
+     *     name: string
+     * } $workflowConfig
+     */
     public function __construct(
-        private readonly TransitionRegistryInterface $transitionRegistry,
+        private readonly array $workflowConfig,
         private readonly WorkflowStoreInterface $store,
-        private readonly ?StepExecutorInterface $stepExecutor = null,
         private readonly ?EventDispatcherInterface $eventDispatcher = null,
         private readonly LoggerInterface $logger = new NullLogger(),
-        private readonly int $maxExecutionTime = 300, // 5 minutes
-        private readonly string $initialPlace = 'start',
+        private readonly int $maxExecutionTime = 300,
         private readonly ClockInterface $clock = new MonotonicClock(),
     ) {
-        $this->workflowAdapter = new SymfonyWorkflowAdapter($this->transitionRegistry, $this->initialPlace);
-    }
-
-    public function addStep(StepInterface $step): void
-    {
-        $this->steps[$step->getName()] = $step;
+        $this->stateMachine = $workflowConfig['stateMachine'];
     }
 
     public function execute(AgentInterface $agent, WorkflowStateInterface $state, array $options = []): ResultInterface
@@ -66,9 +64,12 @@ final class WorkflowExecutor implements WorkflowExecutorInterface
             $this->store->save($state);
 
             $this->eventDispatcher?->dispatch(new WorkflowStartedEvent($state));
-            $this->logger->info('Workflow started', ['id' => $state->getId()]);
+            $this->logger->info('Workflow started', [
+                'id' => $state->getId(),
+                'workflow' => $this->workflowConfig['name'],
+            ]);
 
-            $result = $this->executeSteps($agent, $state, $startTime);
+            $result = $this->executeWorkflow($state, $startTime);
 
             $state->setStatus(WorkflowStatus::COMPLETED);
             $this->store->save($state);
@@ -84,116 +85,129 @@ final class WorkflowExecutor implements WorkflowExecutorInterface
         }
     }
 
-    public function resume(string $id): ResultInterface
+    public function resume(string $id, AgentInterface $agent): ResultInterface
     {
         $state = $this->store->load($id);
 
-        if (null === $state) {
-            throw new RuntimeException(\sprintf('Workflow with ID "%s" not found', $id));
+        if (!$state instanceof WorkflowStateInterface) {
+            throw new RuntimeException(\sprintf('Workflow with ID "%s" not found.', $id));
         }
 
         if (WorkflowStatus::COMPLETED === $state->getStatus()) {
-            throw new RuntimeException(\sprintf('Workflow "%s" is already completed', $id));
+            throw new RuntimeException(\sprintf('Workflow "%s" is already completed.', $id));
+        }
+
+        if (WorkflowStatus::CANCELLED === $state->getStatus()) {
+            throw new RuntimeException(\sprintf('Workflow "%s" has been cancelled.', $id));
         }
 
         if (WorkflowStatus::FAILED === $state->getStatus()) {
             $state->clearErrors();
+            $this->logger->info('Cleared errors for failed workflow', ['id' => $id]);
         }
+
+        $state->setStatus(WorkflowStatus::RUNNING);
+        $this->store->save($state);
 
         $this->logger->info('Resuming workflow', [
             'id' => $id,
-            'step' => $state->getCurrentStep(),
+            'current_place' => $state->getCurrentStep(),
         ]);
 
-        throw new \RuntimeException('Resume requires an agent instance');
+        $resumeTime = $this->clock->now();
+
+        try {
+            $result = $this->executeWorkflow($state, $resumeTime);
+
+            $state->setStatus(WorkflowStatus::COMPLETED);
+            $this->store->save($state);
+
+            $this->eventDispatcher?->dispatch(new WorkflowCompletedEvent($state));
+            $this->logger->info('Workflow resumed and completed', ['id' => $id]);
+
+            return $result;
+        } catch (\Throwable $e) {
+            $this->handleError($state, $e);
+
+            throw $e;
+        }
     }
 
-    private function executeSteps(AgentInterface $agent, WorkflowStateInterface $state, \DateTimeImmutable $startTime): ResultInterface
+    private function executeWorkflow(WorkflowStateInterface $state, \DateTimeImmutable $startTime): ResultInterface
     {
-        $currentStep = $state->getCurrentStep();
-        $result = null;
+        $lastResult = null;
+        $maxIterations = 100; // Prevent infinite loops
+        $iteration = 0;
 
-        while (null !== $currentStep) {
-            $this->checkExecutionTime($startTime);
-
-            if (!isset($this->steps[$currentStep])) {
-                throw new RuntimeException(\sprintf('Step "%s" not found', $currentStep));
+        while ($iteration < $maxIterations) {
+            if (($this->clock->now()->getTimestamp() - $startTime->getTimestamp()) > $this->maxExecutionTime) {
+                throw new \RuntimeException(\sprintf('Workflow execution exceeded maximum time of %d seconds.', $this->maxExecutionTime));
             }
 
-            $step = $this->steps[$currentStep];
+            ++$iteration;
 
-            $this->logger->debug('Executing step', [
-                'step' => $currentStep,
-                'parallel' => $step->isParallel(),
+            $currentPlace = $state->getCurrentStep();
+
+            if ('' === $currentPlace) {
+                throw new RuntimeException('Workflow has no current place');
+            }
+
+            $this->logger->debug('Current workflow place', [
+                'place' => $currentPlace,
+                'iteration' => $iteration,
             ]);
 
+            $enabledTransitions = array_filter(
+                $this->stateMachine->getDefinition()->getTransitions(),
+                fn (Transition $transition): bool => $this->stateMachine->can($state, $transition->getName())
+            );
+
+            if ([] === $enabledTransitions) {
+                $this->logger->debug('No more transitions available, workflow complete');
+                break;
+            }
+
+            $transition = reset($enabledTransitions);
+
             try {
-                $results = $this->stepExecutor->execute([$step], $agent, $state);
-
-                $result = reset($results);
-
-                $state->mergeContext([
-                    'last_result' => $result->getContent(),
-                    'last_step' => $currentStep,
+                $this->logger->debug('Applying transition', [
+                    'transition' => $transition->getName(),
+                    'from' => $transition->getFroms(),
+                    'to' => $transition->getTos(),
                 ]);
 
+                $this->stateMachine->apply($state, $transition->getName());
+
                 $this->store->save($state);
+
+                if (isset($state->getContext()['last_result'])) {
+                    $lastResult = $state->getContext()['last_result'];
+                }
             } catch (\Throwable $e) {
-                $error = new WorkflowError(
-                    $e->getMessage(),
-                    $currentStep,
-                    $e->getCode(),
-                    $e,
-                    context: ['trace' => $e->getTraceAsString()]
-                );
+                $error = new WorkflowError($e->getMessage(), $currentPlace, $e->getCode(), $e, context: [
+                    'transition' => $transition->getName(),
+                    'trace' => $e->getTraceAsString(),
+                ]);
 
                 $state->addError($error);
                 $this->store->save($state);
 
                 throw $e;
             }
-
-            $enabledTransitions = $this->workflowAdapter->getEnabledTransitions($state);
-
-            if ([] === $enabledTransitions) {
-                break;
-            }
-
-            $transitionName = reset($enabledTransitions);
-
-            $this->logger->debug('Applying Symfony Workflow transition', [
-                'transition' => $transitionName,
-                'from' => $currentStep,
-            ]);
-
-            $transition = $this->transitionRegistry->getTransition($transitionName);
-            if ($transition) {
-                $transition->beforeTransition($state);
-            }
-
-            $this->workflowAdapter->apply($state, $transitionName);
-
-            if ($transition instanceof TransitionInterface) {
-                $transition->afterTransition($state);
-                $this->eventDispatcher?->dispatch(new TransitionEvent($state, $transition));
-            }
-
-            $this->store->save($state);
-            $currentStep = $state->getCurrentStep();
         }
 
-        return $result ?? throw new \RuntimeException('No result from workflow');
+        if ($iteration >= $maxIterations) {
+            throw new RuntimeException('Workflow exceeded maximum iterations');
+        }
+
+        return $lastResult ?? new TextResult('Workflow completed successfully');
     }
 
     private function handleError(WorkflowStateInterface $state, \Throwable $e): void
     {
-        $error = new WorkflowError(
-            $e->getMessage(),
-            $state->getCurrentStep(),
-            $e->getCode(),
-            $e,
-            context: ['trace' => $e->getTraceAsString()]
-        );
+        $error = new WorkflowError($e->getMessage(), $state->getCurrentStep(), $e->getCode(), $e, context: [
+            'trace' => $e->getTraceAsString(),
+        ]);
 
         $state->addError($error);
         $state->setStatus(WorkflowStatus::FAILED);
@@ -204,12 +218,5 @@ final class WorkflowExecutor implements WorkflowExecutorInterface
             'id' => $state->getId(),
             'error' => $e->getMessage(),
         ]);
-    }
-
-    private function checkExecutionTime(float $startTime): void
-    {
-        if (microtime(true) - $startTime > $this->maxExecutionTime) {
-            throw new \RuntimeException(\sprintf('Workflow execution exceeded maximum time of %d seconds', $this->maxExecutionTime));
-        }
     }
 }

@@ -28,7 +28,7 @@ use Symfony\Component\Serializer\SerializerInterface;
 final class InMemoryWorkflowStore implements WorkflowStoreInterface, ManagedWorkflowStoreInterface
 {
     /**
-     * @var WorkflowStateInterface[]
+     * @var array<string, mixed>
      */
     private array $states = [];
 
@@ -52,7 +52,16 @@ final class InMemoryWorkflowStore implements WorkflowStoreInterface, ManagedWork
 
     public function save(WorkflowStateInterface $state): void
     {
-        $this->states[$state->getId()] = $this->serializer->serialize($state, 'json');
+        $this->states[$state->getId()] = $this->serializer->normalize($state, 'json');
+    }
+
+    public function remove(string $id): void
+    {
+        if (!isset($this->states[$id])) {
+            return;
+        }
+
+        unset($this->states[$id]);
     }
 
     public function load(string $id): ?WorkflowStateInterface
@@ -63,6 +72,6 @@ final class InMemoryWorkflowStore implements WorkflowStoreInterface, ManagedWork
             return null;
         }
 
-        return $this->serializer->deserialize($state, WorkflowStateInterface::class, 'json');
+        return $this->serializer->denormalize($state, WorkflowStateInterface::class, 'json');
     }
 }

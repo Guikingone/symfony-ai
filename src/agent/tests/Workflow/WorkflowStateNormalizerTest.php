@@ -9,10 +9,10 @@
  * file that was distributed with this source code.
  */
 
-namespace Symfony\AI\Agent\Tests\Workflow\Store;
+namespace Symfony\AI\Agent\Tests\Workflow;
 
 use PHPUnit\Framework\TestCase;
 
-final class InMemoryWorkflowStoreTest extends TestCase
+final class WorkflowStateNormalizerTest extends TestCase
 {
 }

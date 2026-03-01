@@ -11,10 +11,19 @@
 
 namespace Symfony\AI\Agent\Workflow\Store;
 
-use Symfony\AI\Agent\Workflow\WorkflowState;
 use Symfony\AI\Agent\Workflow\WorkflowStateInterface;
+use Symfony\AI\Agent\Workflow\WorkflowStateNormalizer;
 use Symfony\AI\Agent\Workflow\WorkflowStoreInterface;
+use Symfony\Component\Serializer\Encoder\JsonEncoder;
+use Symfony\Component\Serializer\Normalizer\ArrayDenormalizer;
+use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
+use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
+use Symfony\Component\Serializer\Serializer;
+use Symfony\Component\Serializer\SerializerInterface;
 
+/**
+ * @author Guillaume Loulier <personal@guillaumeloulier.fr>
+ */
 final class RedisWorkflowStore implements WorkflowStoreInterface
 {
     public function __construct(
@@ -22,6 +31,10 @@ final class RedisWorkflowStore implements WorkflowStoreInterface
         private readonly int $ttl = 3600,
         private readonly string $prefix = 'workflow:',
         private readonly int $lockTimeout = 10,
+        private readonly SerializerInterface&NormalizerInterface&DenormalizerInterface $serializer = new Serializer([
+            new ArrayDenormalizer(),
+            new WorkflowStateNormalizer(),
+        ], [new JsonEncoder()]),
     ) {
     }
 
@@ -30,23 +43,14 @@ final class RedisWorkflowStore implements WorkflowStoreInterface
         $key = $this->getKey($state->getId());
         $lockKey = $key.':lock';
 
-        // Acquérir un lock distribué
-        $lockAcquired = $this->redis->set(
-            $lockKey,
-            '1',
-            ['NX', 'EX' => $this->lockTimeout]
-        );
+        $lockAcquired = $this->redis->set($lockKey, '1', ['NX', 'EX' => $this->lockTimeout]);
 
         if (!$lockAcquired) {
             throw new \RuntimeException('Could not acquire lock for workflow '.$state->getId());
         }
 
         try {
-            $this->redis->setex(
-                $key,
-                $this->ttl,
-                json_encode($state->toArray(), \JSON_THROW_ON_ERROR)
-            );
+            $this->redis->setex($key, $this->ttl, $this->serializer->serialize($state, 'json'));
         } finally {
             $this->redis->del($lockKey);
         }
@@ -61,17 +65,14 @@ final class RedisWorkflowStore implements WorkflowStoreInterface
             return null;
         }
 
-        return WorkflowState::fromArray(json_decode($data, true, 512, \JSON_THROW_ON_ERROR));
+        return $this->serializer->deserialize($data, WorkflowStateInterface::class, 'json');
     }
 
-    public function delete(string $id): void
+    public function remove(string $id): void
     {
-        $this->redis->del($this->getKey($id));
-    }
+        $key = $this->getKey($id);
 
-    public function exists(string $id): bool
-    {
-        return (bool) $this->redis->exists($this->getKey($id));
+        $this->redis->del($key);
     }
 
     private function getKey(string $id): string

@@ -42,7 +42,7 @@ final class CacheWorkflowStore implements WorkflowStoreInterface, ManagedWorkflo
 
     public function setup(array $options = []): void
     {
-        $this->cache->get($this->key, static fn () => []);
+        $this->cache->get($this->key, static fn (): array => []);
     }
 
     public function drop(array $options = []): void

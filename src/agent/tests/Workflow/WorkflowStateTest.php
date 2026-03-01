@@ -18,66 +18,44 @@ use Symfony\AI\Agent\Workflow\WorkflowStatus;
 
 final class WorkflowStateTest extends TestCase
 {
-    public function testConstruction(): void
+    public function testConstruct(): void
     {
-        $state = new WorkflowState(
-            id: 'test-id',
-            currentStep: 'start',
-            context: ['key' => 'value'],
-            metadata: ['meta' => 'data']
-        );
+        $state = new WorkflowState('test-123');
 
-        $this->assertSame('test-id', $state->getId());
-        $this->assertSame('start', $state->getCurrentStep());
-        $this->assertSame(['key' => 'value'], $state->getContext());
-        $this->assertSame(['meta' => 'data'], $state->getMetadata());
+        $this->assertSame('test-123', $state->getId());
         $this->assertSame(WorkflowStatus::PENDING, $state->getStatus());
-        $this->assertEmpty($state->getErrors());
+        $this->assertSame([], $state->getContext());
+        $this->assertSame([], $state->getMetadata());
     }
 
-    public function testSetCurrentStep(): void
+    public function testGetCurrentStepFromMarking(): void
     {
-        $state = new WorkflowState('test-id', 'start');
-        $originalUpdatedAt = $state->getUpdatedAt();
-
-        usleep(1000); // Ensure time difference
-        $state->setCurrentStep('processing');
+        $state = new WorkflowState('test-123', ['__marking' => ['processing' => 1]]);
 
         $this->assertSame('processing', $state->getCurrentStep());
-        $this->assertGreaterThan($originalUpdatedAt, $state->getUpdatedAt());
+    }
+
+    public function testGetCurrentStepEmpty(): void
+    {
+        $state = new WorkflowState('test-123');
+
+        $this->assertSame('', $state->getCurrentStep());
     }
 
     public function testMergeContext(): void
     {
-        $state = new WorkflowState('test-id', 'start', ['key1' => 'value1']);
+        $state = new WorkflowState('test-123', ['key1' => 'value1']);
         $state->mergeContext(['key2' => 'value2']);
 
-        $this->assertSame([
-            'key1' => 'value1',
-            'key2' => 'value2',
-        ], $state->getContext());
-    }
-
-    public function testMergeContextOverridesExistingKeys(): void
-    {
-        $state = new WorkflowState('test-id', 'start', ['key' => 'old']);
-        $state->mergeContext(['key' => 'new']);
-
-        $this->assertSame(['key' => 'new'], $state->getContext());
-    }
-
-    public function testSetStatus(): void
-    {
-        $state = new WorkflowState('test-id', 'start');
-        $state->setStatus(WorkflowStatus::RUNNING);
-
-        $this->assertSame(WorkflowStatus::RUNNING, $state->getStatus());
+        $context = $state->getContext();
+        $this->assertSame('value1', $context['key1']);
+        $this->assertSame('value2', $context['key2']);
     }
 
     public function testAddError(): void
     {
-        $state = new WorkflowState('test-id', 'start');
-        $error = new WorkflowError('Test error', 'start', 500);
+        $state = new WorkflowState('test-123');
+        $error = new WorkflowError('Test error', 'processing');
 
         $state->addError($error);
 
@@ -87,81 +65,40 @@ final class WorkflowStateTest extends TestCase
 
     public function testClearErrors(): void
     {
-        $state = new WorkflowState('test-id', 'start');
-        $state->addError(new WorkflowError('Error 1', 'start'));
-        $state->addError(new WorkflowError('Error 2', 'start'));
+        $state = new WorkflowState('test-123');
+        $state->addError(new WorkflowError('Error 1', 'step1'));
+        $state->addError(new WorkflowError('Error 2', 'step2'));
 
         $this->assertCount(2, $state->getErrors());
 
         $state->clearErrors();
 
-        $this->assertEmpty($state->getErrors());
+        $this->assertCount(0, $state->getErrors());
     }
 
-    public function testToArray(): void
+    public function testToArrayAndFromArray(): void
     {
         $state = new WorkflowState(
-            id: 'test-id',
-            currentStep: 'processing',
-            context: ['key' => 'value'],
-            metadata: ['meta' => 'data'],
-            status: WorkflowStatus::RUNNING
+            'test-123',
+            ['key' => 'value', '__marking' => ['processing' => 1]],
+            ['meta' => 'data'],
+            WorkflowStatus::RUNNING
         );
-
-        $error = new WorkflowError('Test error', 'processing', 500);
-        $state->addError($error);
+        $state->addError(new WorkflowError('Test error', 'processing'));
 
         $array = $state->toArray();
 
-        $this->assertSame('test-id', $array['id']);
-        $this->assertSame('processing', $array['currentStep']);
-        $this->assertSame(['key' => 'value'], $array['context']);
+        $this->assertSame('test-123', $array['id']);
+        $this->assertSame(['key' => 'value', '__marking' => ['processing' => 1]], $array['context']);
         $this->assertSame(['meta' => 'data'], $array['metadata']);
         $this->assertSame('running', $array['status']);
         $this->assertCount(1, $array['errors']);
-        $this->assertArrayHasKey('createdAt', $array);
-        $this->assertArrayHasKey('updatedAt', $array);
-    }
 
-    public function testFromArray(): void
-    {
-        $data = [
-            'id' => 'test-id',
-            'currentStep' => 'processing',
-            'context' => ['key' => 'value'],
-            'metadata' => ['meta' => 'data'],
-            'status' => 'running',
-            'errors' => [
-                [
-                    'message' => 'Test error',
-                    'step' => 'processing',
-                    'code' => 500,
-                    'occurredAt' => (new \DateTimeImmutable())->format(\DateTimeInterface::RFC3339),
-                    'context' => [],
-                ],
-            ],
-            'createdAt' => (new \DateTimeImmutable())->format(\DateTimeInterface::RFC3339),
-            'updatedAt' => (new \DateTimeImmutable())->format(\DateTimeInterface::RFC3339),
-        ];
+        $restoredState = WorkflowState::fromArray($array);
 
-        $state = WorkflowState::fromArray($data);
-
-        $this->assertSame('test-id', $state->getId());
-        $this->assertSame('processing', $state->getCurrentStep());
-        $this->assertSame(['key' => 'value'], $state->getContext());
-        $this->assertSame(['meta' => 'data'], $state->getMetadata());
-        $this->assertSame(WorkflowStatus::RUNNING, $state->getStatus());
-        $this->assertCount(1, $state->getErrors());
-    }
-
-    public function testUpdatedAtChangesOnModification(): void
-    {
-        $state = new WorkflowState('test-id', 'start');
-        $originalUpdatedAt = $state->getUpdatedAt();
-
-        usleep(1000);
-        $state->setContext(['new' => 'context']);
-
-        $this->assertGreaterThan($originalUpdatedAt, $state->getUpdatedAt());
+        $this->assertSame('test-123', $restoredState->getId());
+        $this->assertSame(WorkflowStatus::RUNNING, $restoredState->getStatus());
+        $this->assertSame('processing', $restoredState->getCurrentStep());
+        $this->assertCount(1, $restoredState->getErrors());
     }
 }

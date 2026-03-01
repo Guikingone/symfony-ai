@@ -21,7 +21,6 @@ final class WorkflowState implements WorkflowStateInterface
 
     public function __construct(
         private readonly string $id,
-        private string $currentStep,
         private array $context = [],
         private array $metadata = [],
         private WorkflowStatus $status = WorkflowStatus::PENDING,
@@ -37,13 +36,13 @@ final class WorkflowState implements WorkflowStateInterface
 
     public function getCurrentStep(): string
     {
-        return $this->currentStep;
-    }
+        $marking = $this->context['__marking'] ?? [];
 
-    public function setCurrentStep(string $step): void
-    {
-        $this->currentStep = $step;
-        $this->touch();
+        if ([] === $marking) {
+            return '';
+        }
+
+        return (string) array_key_first($marking);
     }
 
     public function getContext(): array
@@ -116,7 +115,6 @@ final class WorkflowState implements WorkflowStateInterface
     {
         return [
             'id' => $this->id,
-            'currentStep' => $this->currentStep,
             'context' => $this->context,
             'metadata' => $this->metadata,
             'status' => $this->status->value,
@@ -130,7 +128,6 @@ final class WorkflowState implements WorkflowStateInterface
     {
         $state = new self(
             $data['id'],
-            $data['currentStep'],
             $data['context'] ?? [],
             $data['metadata'] ?? [],
             WorkflowStatus::from($data['status'] ?? 'pending'),
