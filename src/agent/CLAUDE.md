@@ -25,6 +25,7 @@ The Agent component follows a processor-based architecture:
 - **Toolbox** (`src/Toolbox/`): Tool integration for function calling capabilities
 - **MultiAgent** (`src/MultiAgent/`): Orchestration across multiple specialized agents
 - **Bridge** (`src/Bridge/`): Third-party tool integrations (Brave, Tavily, Wikipedia, etc.)
+- **Workflow** (`src/Workflow/`): Multi-step agent orchestration using the Symfony Workflow component
 
 ## Development Commands
 
@@ -72,11 +73,24 @@ The Toolbox system enables function calling:
 - Fault-tolerant execution with error handling
 - Event system for tool lifecycle management
 
+### Workflow System
+The Workflow system (`src/Workflow/`) enables multi-step agent orchestration:
+- **AgentWorkflow**: Main orchestrator implementing `AgentWorkflowInterface` with `run()` and `resume()` methods; supports optional concurrency-safe locking, parallel AND-split execution, and branch merging
+- **ExecutorInterface**: Contract for step execution — `AgentExecutor` (wraps an Agent, also async-capable via `AsyncExecutorInterface`), `CallableExecutor`, `ProcessExecutor`, and the `RetryExecutor` decorator
+- **GuardInterface/AbstractGuard**: Pre-execution checks; each guard's `supports()` method declares which places it applies to
+- **TransitionResolverInterface**: Determines next transition — `StateBasedTransitionResolver` reads `_next_transition` from state data, `ExpressionTransitionResolver` evaluates per-transition expressions
+- **WorkflowStateInterface/WorkflowState**: Immutable state object tracking data, current place, and completed places
+- **WorkflowStateStoreInterface**: Persistence — InMemory, Cache, Filesystem, and Redis bridge implementations; `ManagedWorkflowStateStoreInterface` adds setup/drop, `ListableWorkflowStateStoreInterface` adds state enumeration
+- **ParallelExecutionStrategyInterface**: Runs AND-split branches — `ConcurrentExecutionStrategy` (default) and `SequentialExecutionStrategy`
+- **WorkflowStateNormalizer**: Symfony Serializer normalizer for state serialization/deserialization
+- Integrates with the Symfony Workflow component for place/transition logic
+
 ## Dependencies
 
 The Agent component depends on:
 - **Platform component**: Required for AI model communication
 - **Store component**: Optional, for embedding-based memory
+- **Symfony Workflow component**: Optional, required for the Workflow system
 - **Symfony components**: HttpClient, Serializer, PropertyAccess, Clock
 
 ## Testing Patterns

@@ -13,6 +13,9 @@ CHANGELOG
  * The `endpoint` option for `Meilisearch` is now `null` by default to allow the usage of a `ScopingHttpClient`
  * Wire `Meilisearch\StoreFactory` from `AiBundle`
  * Add `lang` option for `Postgres`
+ * Add `workflow` configuration for orchestrating multi-step AI agent workflows using the Symfony Workflow component
+ * Add `TraceableAgentWorkflow` for profiler integration with workflow execution
+ * Add workflow decoration in `DebugCompilerPass` for debug mode tracing
 
 0.8
 ---

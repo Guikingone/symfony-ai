@@ -13,6 +13,7 @@ CHANGELOG
  * [BC BREAK] Change `public array $calls` to `private array $calls` in `TraceableAgent` and `TraceableToolbox` - use `getCalls()` instead
  * [BC BREAK] Change `StaticMemoryProvider` constructor from variadic `string ...$memory` to `array $memory`
  * [BC BREAK] Change `ToolCallsExecuted` constructor from variadic `ToolResult ...$toolResults` to `array $toolResults`
+ * Add `Workflow` system for orchestrating multi-step AI agent pipelines using the Symfony Workflow component
 
 0.7
 ---
