@@ -18,6 +18,7 @@ use Symfony\AI\AiBundle\Profiler\TraceableMessageStore;
 use Symfony\AI\AiBundle\Profiler\TraceablePlatform;
 use Symfony\AI\AiBundle\Profiler\TraceableStore;
 use Symfony\AI\AiBundle\Profiler\TraceableToolbox;
+use Symfony\AI\AiBundle\Profiler\TraceableWorkflowStateStore;
 use Symfony\Component\Clock\ClockInterface;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
@@ -107,10 +108,23 @@ final class DebugCompilerPass implements CompilerPassInterface
                     new Reference('.inner'),
                     new Reference(ClockInterface::class),
                 ])
-                ->addTag('ai.traceable_workflow')
+                ->addTag('ai.traceable_agent_workflow')
                 ->addTag('kernel.reset', ['method' => 'reset']);
             $suffix = u($workflow)->afterLast('.')->toString();
-            $container->setDefinition('ai.traceable_workflow.'.$suffix, $traceableWorkflowDefinition);
+            $container->setDefinition('ai.traceable_agent_workflow.'.$suffix, $traceableWorkflowDefinition);
+        }
+
+        foreach (array_keys($container->findTaggedServiceIds('ai.agent.workflow_state_store')) as $workflowStateStore) {
+            $traceableWorkflowStateStoreDefinition = (new Definition(TraceableWorkflowStateStore::class))
+                ->setDecoratedService($workflowStateStore, priority: -1024)
+                ->setArguments([
+                    new Reference('.inner'),
+                    new Reference(ClockInterface::class),
+                ])
+                ->addTag('ai.traceable_agent_workflow_state_store')
+                ->addTag('kernel.reset', ['method' => 'reset']);
+            $suffix = u($workflowStateStore)->afterLast('.')->toString();
+            $container->setDefinition('ai.traceable_agent_workflow_state_store.'.$suffix, $traceableWorkflowStateStoreDefinition);
         }
     }
 }

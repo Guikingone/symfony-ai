@@ -37,7 +37,7 @@ final class TraceableAgentWorkflowTest extends TestCase
         $this->assertSame($resultState, $result);
         $this->assertCount(1, $traceable->calls);
         $this->assertSame('run', $traceable->calls[0]['action']);
-        $this->assertSame($initialState, $traceable->calls[0]['initial_state']);
+        $this->assertSame($initialState, $traceable->calls[0]['state']);
         $this->assertEquals($clock->now(), $traceable->calls[0]['called_at']);
     }
 

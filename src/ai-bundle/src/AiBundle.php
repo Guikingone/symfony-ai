@@ -38,7 +38,9 @@ use Symfony\AI\Agent\Workflow\Bridge\Filesystem\WorkflowStateStore as Filesystem
 use Symfony\AI\Agent\Workflow\Bridge\Redis\WorkflowStateStore as RedisWorkflowStateStore;
 use Symfony\AI\Agent\Workflow\Executor\AgentExecutor;
 use Symfony\AI\Agent\Workflow\InMemory\WorkflowStateStore as InMemoryWorkflowStateStore;
+use Symfony\AI\Agent\Workflow\ManagedWorkflowStateStoreInterface;
 use Symfony\AI\Agent\Workflow\TransitionResolver\StateBasedTransitionResolver;
+use Symfony\AI\Agent\Workflow\WorkflowStateStoreInterface;
 use Symfony\AI\AiBundle\DependencyInjection\DebugCompilerPass;
 use Symfony\AI\AiBundle\DependencyInjection\ProcessorCompilerPass;
 use Symfony\AI\AiBundle\Exception\InvalidArgumentException;
@@ -352,6 +354,10 @@ final class AiBundle extends AbstractBundle
                 ->addTag('ai.agent.input_processor', ['tagged_by' => 'interface']);
             $builder->registerForAutoconfiguration(OutputProcessorInterface::class)
                 ->addTag('ai.agent.output_processor', ['tagged_by' => 'interface']);
+            $builder->registerForAutoconfiguration(WorkflowStateStoreInterface::class)
+                ->addTag('ai.agent.workflow_state_store', ['tagged_by' => 'interface']);
+            $builder->registerForAutoconfiguration(ManagedWorkflowStateStoreInterface::class)
+                ->addTag('ai.agent.workflow_state_store', ['tagged_by' => 'interface']);
         }
 
         $builder->registerForAutoconfiguration(ModelClientInterface::class)
@@ -2519,25 +2525,27 @@ final class AiBundle extends AbstractBundle
         $storeConfig = $config['store'];
 
         $storeDefinition = match ($storeConfig['type']) {
-            'memory' => new Definition(InMemoryWorkflowStateStore::class),
-            'cache' => new Definition(CacheWorkflowStateStore::class, [
+            'memory' => (new Definition(InMemoryWorkflowStateStore::class))->addTag('workflow_state_store'),
+            'cache' => (new Definition(CacheWorkflowStateStore::class, [
                 new Reference($storeConfig['cache_service']),
                 $storeConfig['prefix'],
                 $storeConfig['ttl'],
-            ]),
-            'filesystem' => new Definition(FilesystemWorkflowStateStore::class, [
+            ]))->addTag('workflow_state_store'),
+            'filesystem' => (new Definition(FilesystemWorkflowStateStore::class, [
                 new Definition(Filesystem::class),
                 $storeConfig['directory'],
-            ]),
-            'redis' => new Definition(RedisWorkflowStateStore::class, [
+            ]))->addTag('workflow_state_store'),
+            'redis' => (new Definition(RedisWorkflowStateStore::class, [
                 new Reference($storeConfig['redis_client']),
                 $storeConfig['prefix'],
-            ]),
+            ]))->addTag('workflow_state_store'),
             'service' => $storeConfig['service'],
-            default => throw new InvalidArgumentException(),
+            default => throw new InvalidArgumentException(\sprintf('Unsupported store type "%s"', $storeConfig['type'])),
         };
 
-        $container->setDefinition('ai.workflow.'.$name.'.store', $storeDefinition);
+        $storeConfig['type'] === 'service'
+            ? $container->setAlias('ai.workflow.'.$name.'.store', $storeDefinition)
+            : $container->setDefinition('ai.workflow.'.$name.'.store', $storeDefinition);
 
         // 3. Register guards
         $guardReferences = [];

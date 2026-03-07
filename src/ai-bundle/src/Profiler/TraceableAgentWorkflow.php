@@ -22,7 +22,7 @@ use Symfony\Contracts\Service\ResetInterface;
  *
  * @phpstan-type AgentWorkflowData array{
  *     action: string,
- *     initial_state?: WorkflowStateInterface,
+ *     state?: WorkflowStateInterface,
  *     id?: string,
  *     called_at: \DateTimeImmutable,
  * }
@@ -44,7 +44,7 @@ final class TraceableAgentWorkflow implements AgentWorkflowInterface, ResetInter
     {
         $this->calls[] = [
             'action' => 'run',
-            'initial_state' => $initialState,
+            'state' => $initialState,
             'called_at' => $this->clock->now(),
         ];
 

@@ -20,9 +20,20 @@ use Symfony\Contracts\Service\ResetInterface;
 
 /**
  * @author Guillaume Loulier <personal@guillaumeloulier.fr>
+ *
+ * @phpstan-type WorkflowStateStoreData array{
+ *     method: string,
+ *     options?: array<string, mixed>,
+ *     state?: WorkflowStateInterface,
+ *     id?: string,
+ *     called_at: \DateTimeImmutable,
+ * }
  */
 final class TraceableWorkflowStateStore implements WorkflowStateStoreInterface, ManagedWorkflowStateStoreInterface, ResetInterface
 {
+    /**
+     * @var WorkflowStateStoreData[]
+     */
     public array $calls = [];
 
     public function __construct(
@@ -33,22 +44,46 @@ final class TraceableWorkflowStateStore implements WorkflowStateStoreInterface, 
 
     public function setup(array $options = []): void
     {
-        // TODO: Implement setup() method.
+        $this->calls[] = [
+            'method' => 'setup',
+            'options' => $options,
+            'called_at' => $this->clock->now(),
+        ];
+
+        $this->store->setup($options);
     }
 
     public function drop(array $options = []): void
     {
-        // TODO: Implement drop() method.
+        $this->calls[] = [
+            'method' => 'drop',
+            'options' => $options,
+            'called_at' => $this->clock->now(),
+        ];
+
+        $this->store->drop($options);
     }
 
     public function save(WorkflowStateInterface $state): void
     {
-        // TODO: Implement save() method.
+        $this->calls[] = [
+            'method' => 'save',
+            'state' => $state,
+            'called_at' => $this->clock->now(),
+        ];
+
+        $this->store->save($state);
     }
 
     public function load(string $id): WorkflowStateInterface
     {
-        // TODO: Implement load() method.
+        $this->calls[] = [
+            'method' => 'load',
+            'id' => $id,
+            'called_at' => $this->clock->now(),
+        ];
+
+        return $this->store->load($id);
     }
 
     public function has(string $id): bool
@@ -65,7 +100,7 @@ final class TraceableWorkflowStateStore implements WorkflowStateStoreInterface, 
     public function delete(string $id): void
     {
         $this->calls[] = [
-            'method' => 'delete',
+            'method' => 'setup',
             'id' => $id,
             'called_at' => $this->clock->now(),
         ];

@@ -28,6 +28,7 @@ use Symfony\Component\HttpKernel\DataCollector\LateDataCollectorInterface;
  * @phpstan-import-type AgentData from TraceableAgent
  * @phpstan-import-type StoreData from TraceableStore
  * @phpstan-import-type AgentWorkflowData from TraceableAgentWorkflow
+ * @phpstan-import-type WorkflowStateStoreData from TraceableWorkflowStateStore
  *
  * @phpstan-type CollectedPlatformCallData array{
  *     model: string,
@@ -75,6 +76,11 @@ final class DataCollector extends AbstractDataCollector implements LateDataColle
     private readonly array $agentWorkflows;
 
     /**
+     * @var TraceableWorkflowStateStore[]
+     */
+    private readonly array $workflowStateStores;
+
+    /**
      * @param iterable<TraceablePlatform>     $platforms
      * @param iterable<TraceableToolbox>      $toolboxes
      * @param iterable<TraceableMessageStore> $messageStores
@@ -82,6 +88,7 @@ final class DataCollector extends AbstractDataCollector implements LateDataColle
      * @param iterable<TraceableAgent>        $agents
      * @param iterable<TraceableStore>        $stores
      * @param iterable<TraceableAgentWorkflow>     $agentWorkflows
+     * @param iterable<TraceableWorkflowStateStore> $workflowStateStores
      */
     public function __construct(
         iterable $platforms,
@@ -90,7 +97,8 @@ final class DataCollector extends AbstractDataCollector implements LateDataColle
         iterable $chats,
         iterable $agents,
         iterable $stores,
-        iterable $agentWorkflows
+        iterable $agentWorkflows,
+        iterable $workflowStateStores
     ) {
         $this->platforms = iterator_to_array($platforms);
         $this->toolboxes = iterator_to_array($toolboxes);
@@ -99,6 +107,7 @@ final class DataCollector extends AbstractDataCollector implements LateDataColle
         $this->agents = iterator_to_array($agents);
         $this->stores = iterator_to_array($stores);
         $this->agentWorkflows = iterator_to_array($agentWorkflows);
+        $this->workflowStateStores = iterator_to_array($workflowStateStores);
     }
 
     public function collect(Request $request, Response $response, ?\Throwable $exception = null): void
@@ -117,6 +126,7 @@ final class DataCollector extends AbstractDataCollector implements LateDataColle
             'agents' => array_merge(...array_map(static fn (TraceableAgent $agent): array => $agent->calls, $this->agents)),
             'stores' => array_merge(...array_map(static fn (TraceableStore $store): array => $store->calls, $this->stores)),
             'agent_workflows' => array_merge(...array_map(static fn (TraceableAgentWorkflow $agentWorkflow): array => $agentWorkflow->calls, $this->agentWorkflows)),
+            'workflow_state_stores' => array_merge(...array_map(static fn (TraceableWorkflowStateStore $workflowStateStore): array => $workflowStateStore->calls, $this->workflowStateStores)),
         ];
     }
 
@@ -192,6 +202,14 @@ final class DataCollector extends AbstractDataCollector implements LateDataColle
     public function getAgentWorkflows(): array
     {
         return $this->data['agent_workflows'] ?? [];
+    }
+
+    /**
+     * @return WorkflowStateStoreData[]
+     */
+    public function getWorkflowStateStores(): array
+    {
+        return $this->data['workflow_state_stores'] ?? [];
     }
 
     /**
