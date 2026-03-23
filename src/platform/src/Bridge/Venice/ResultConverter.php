@@ -101,7 +101,9 @@ final class ResultConverter implements ResultConverterInterface
         }
 
         if ($url->containsAny('transcription')) {
-            return new TextResult($response->toArray()['text']);
+            $transcription = $response->toArray();
+
+            return new TextResult($transcription['text']);
         }
 
         throw new RuntimeException('Unsupported model capability.');
