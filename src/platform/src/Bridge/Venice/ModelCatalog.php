@@ -76,14 +76,30 @@ final class ModelCatalog implements ModelCatalogInterface
                     Capability::OUTPUT_EMBEDDINGS,
                 ],
             ],
-            'text' === $model['type'] => [
+            'text' === $model['type'] && $model['supportsFunctionCalling'] => [
                 'class' => Venice::class,
                 'capabilities' => [
                     Capability::INPUT_TEXT,
                     Capability::INPUT_MESSAGES,
                     Capability::OUTPUT_TEXT,
                     Capability::TOOL_CALLING,
+                ],
+            ],
+            'text' === $model['type'] && $model['supportsReasoning'] => [
+                'class' => Venice::class,
+                'capabilities' => [
+                    Capability::INPUT_TEXT,
+                    Capability::INPUT_MESSAGES,
+                    Capability::OUTPUT_TEXT,
                     Capability::THINKING,
+                ],
+            ],
+            'text' === $model['type'] => [
+                'class' => Venice::class,
+                'capabilities' => [
+                    Capability::INPUT_TEXT,
+                    Capability::INPUT_MESSAGES,
+                    Capability::OUTPUT_TEXT,
                 ],
             ],
             'tts' === $model['type'] => [
