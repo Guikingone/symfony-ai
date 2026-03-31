@@ -12,7 +12,7 @@
 namespace Symfony\AI\Store\Document;
 
 /**
- * @template-extends \ArrayObject<string, mixed>
+ * @template-extends \ArrayObject<string, int|string|array<string, mixed>>
  *
  * @author Christopher Hertel <mail@christopher-hertel.de>
  */
