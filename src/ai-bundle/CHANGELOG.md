@@ -4,6 +4,7 @@ CHANGELOG
 0.8
 ---
 
+ * Add `tts_stream` option in agent `speech` configuration to enable streaming text-to-speech (returns a cancellable `StreamResult` of `BinaryDelta` chunks; requires bridge support, e.g. ElevenLabs)
  * [BC BREAK] Rename service ID `ai.agent.response_format_factory` to `ai.platform.response_format_factory`
  * The `collection` option for `ChromaDb` is now optional.
  * Update `DataCollector` to use `getCalls()` and `getResultCache()` getter methods on Traceable* classes
