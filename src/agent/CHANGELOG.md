@@ -5,6 +5,7 @@ CHANGELOG
 ----
 
  * Add `SystemPromptInputProcessor::getSystemPrompt()` to read the configured system prompt without reflection
+ * Add `ttsStream` flag to `SpeechConfiguration`. When enabled, `SpeechAgent` propagates `stream: true` to the TTS bridge and returns a cancellable `StreamResult` of `BinaryDelta` chunks, supporting barge-in via `cancel()`.
 
 0.8
 ---
