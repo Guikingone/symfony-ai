@@ -1,3 +1,12 @@
+UPGRADE FROM 0.8 to 0.9
+=======================
+
+Store
+-----
+
+ * A `StoreFactory` has been introduced for `Postgres`
+ * A `lang` option has been introduced for `Postgres`
+
 UPGRADE FROM 0.7 to 0.8
 =======================
 

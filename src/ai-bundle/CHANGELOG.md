@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+0.9
+---
+
+ * Add `lang` option for `Postgres`
+
 0.8
 ---
 
