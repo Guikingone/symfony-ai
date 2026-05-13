@@ -33,7 +33,7 @@ final class StoreTest extends TestCase
             ]),
         ]);
 
-        $store = new Store($httpClient, 'http://127.0.0.1:9200', 'foo');
+        $store = new Store($httpClient, 'foo');
         $store->setup();
 
         $this->assertSame(1, $httpClient->getRequestsCount());
@@ -54,7 +54,7 @@ final class StoreTest extends TestCase
             ]),
         ]);
 
-        $store = new Store($httpClient, 'http://127.0.0.1:9200', 'foo');
+        $store = new Store($httpClient, 'foo');
         $store->setup();
 
         $this->assertSame(2, $httpClient->getRequestsCount());
@@ -75,7 +75,7 @@ final class StoreTest extends TestCase
             ]),
         ]);
 
-        $store = new Store($httpClient, 'http://127.0.0.1:9200', 'foo');
+        $store = new Store($httpClient, 'foo');
 
         $store->setup([
             'dimensions' => 768,
@@ -93,7 +93,7 @@ final class StoreTest extends TestCase
             ]),
         ]);
 
-        $store = new Store($httpClient, 'http://127.0.0.1:9200', 'foo');
+        $store = new Store($httpClient, 'foo');
 
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('The index "foo" does not exist.');
@@ -114,7 +114,7 @@ final class StoreTest extends TestCase
             ]),
         ]);
 
-        $store = new Store($httpClient, 'http://127.0.0.1:9200', 'foo');
+        $store = new Store($httpClient, 'foo');
         $store->drop();
 
         $this->assertSame(2, $httpClient->getRequestsCount());
@@ -143,7 +143,7 @@ final class StoreTest extends TestCase
             ]),
         ]);
 
-        $store = new Store($httpClient, 'http://127.0.0.1:9200', 'foo');
+        $store = new Store($httpClient, 'foo');
         $store->add([new VectorDocument(Uuid::v7(), new Vector([0.1, 0.2, 0.3]))]);
 
         $this->assertSame(1, $httpClient->getRequestsCount());
@@ -190,7 +190,7 @@ final class StoreTest extends TestCase
             ]),
         ]);
 
-        $store = new Store($httpClient, 'http://127.0.0.1:9200', 'foo');
+        $store = new Store($httpClient, 'foo');
         $results = $store->query(new VectorQuery(new Vector([0.1, 0.2, 0.3])));
 
         $this->assertCount(2, iterator_to_array($results));
@@ -199,19 +199,19 @@ final class StoreTest extends TestCase
 
     public function testStoreSupportsVectorQuery()
     {
-        $store = new Store(new MockHttpClient(), 'http://localhost:9200', 'test-index');
+        $store = new Store(new MockHttpClient(), 'test-index');
         $this->assertTrue($store->supports(VectorQuery::class));
     }
 
     public function testStoreDoesNotSupportTextQuery()
     {
-        $store = new Store(new MockHttpClient(), 'http://localhost:9200', 'test-index');
+        $store = new Store(new MockHttpClient(), 'test-index');
         $this->assertFalse($store->supports(TextQuery::class));
     }
 
     public function testStoreDoesNotSupportHybridQuery()
     {
-        $store = new Store(new MockHttpClient(), 'http://localhost:9200', 'test-index');
+        $store = new Store(new MockHttpClient(), 'test-index');
         $this->assertFalse($store->supports(HybridQuery::class));
     }
 }

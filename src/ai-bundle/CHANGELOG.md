@@ -6,6 +6,7 @@ CHANGELOG
 
  * Add support for `ScopingHttpClient` usage in `Typesense` store via `http_client` option
  * Wire `Typesense\StoreFactory` from `AiBundle`
+ * Wire `Elasticsearch\StoreFactory` from `AiBundle`
 
 0.10
 ----

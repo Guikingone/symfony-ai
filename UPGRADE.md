@@ -8,6 +8,7 @@ Store
  * The `endpointUrl` parameter for Typesense `Store` has been removed
  * The `apiKey` parameter for Typesense `Store` has been removed
  * A `StoreFactory` has been introduced for Typesense `Store`
+ * A `StoreFactory` has been introduced for Elasticsearch `Store`
 
 UPGRADE FROM 0.9 to 0.10
 ========================
@@ -287,6 +288,9 @@ Store
    -Store::fromDbal($connection, $tableName, $vectorFieldName, $distance);
    +StoreFactory::createStoreFromDbal($connection, $tableName, $vectorFieldName, $distance, $lang);
    ```
+ * Add support for `ScopingHttpClient` in Elasticsearch `Store`
+ * The `endpoint` parameter for Elasticsearch `Store` has been removed
+ * A `StoreFactory` has been introduced for Elasticsearch `Store`
 
 UPGRADE FROM 0.7 to 0.8
 =======================
