@@ -4,7 +4,8 @@ CHANGELOG
 0.9
 ---
 
-* [BC BREAK] `MessageNormalizer` now serializes assistant messages with an ordered `parts` field to preserve the sequence of `Text`, `Thinking`, and `ToolCall` blocks across round-trips. Legacy payloads (no `parts`, only `content` + `toolsCalls`) still denormalize, but ordering is no longer guaranteed for them.
+ * [BC BREAK] `MessageNormalizer` now serializes assistant messages with an ordered `parts` field to preserve the sequence of `Text`, `Thinking`, and `ToolCall` blocks across round-trips. Legacy payloads (no `parts`, only `content` + `toolsCalls`) still denormalize, but ordering is no longer guaranteed for them.
+ * `Chat::submit()` and `Chat::stream()` now work on a cloned `MessageBag`, so the underlying store is only updated when the agent call succeeds (or, for streaming, when `ChatStreamListener::onComplete()` is reached). An interrupted or aborted call leaves the store untouched instead of persisting an orphan user message.
 
 0.8
 ---
