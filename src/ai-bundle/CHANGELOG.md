@@ -4,6 +4,7 @@ CHANGELOG
 0.9
 ---
 
+ * Add `together` platform configuration
  * Validate structured output using `symfony/validator` when available
  * Make `ai:platform:invoke` arguments optional and prompt for them interactively when missing
  * Visualize failed calls with `result_type: 'error'` in profiler
